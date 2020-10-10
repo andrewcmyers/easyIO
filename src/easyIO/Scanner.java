@@ -5,11 +5,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
 
-/** A {@code BacktrackScanner} extended with helpful methods for parsing common
- *  things.  Generally, all methods parse input starting at the current
+/** A {@code BacktrackScanner} extended with convenience methods for
+ * parsing common things like integers and identifiers.
+ *    Compared to a {@code java.util.Scanner}, it has the ability to peek()
+ *  at the next character on the input and the ability to read its input from
+ *  multiple Readers, which may be added on the fly. Beyond this, it can also
+ *  do arbitary lookahead and rollback of the input stream using the
+ *  mark(), accept(), and abort() methods from {@code BacktrackScanner}.
+ *    Generally, all methods parse input starting at the current
  *  position, and throw {@code UnexpectedInput} if the expected input is not
  *  found. If an exception is thrown, the current input position is left
- *  unchanged. */
+ *  unchanged.
+ */
 public class Scanner extends BacktrackScanner {
 		
 	public Scanner() {
@@ -138,7 +145,8 @@ public class Scanner extends BacktrackScanner {
 		}
 	}
 
-	/** Scan an identifier ala Java. @throws UnexpectedInput if the next characters are*/
+    /** Scan an identifier ala Java. @throws UnexpectedInput if the next
+     * characters are*/
 	public void identifier() throws UnexpectedInput {
 		int first = peek();
 		if (!Character.isAlphabetic(first) && first != '_')
@@ -153,8 +161,8 @@ public class Scanner extends BacktrackScanner {
 	 * Scan past an integer constant and return its value.
 	 * 
 	 * @throws UnexpectedInput
-	 *             if the characters following the current position are not an integer
-	 *             literal.
+     *             if the characters following the current position are not an
+     *             integer literal.
 	 */
 	int nextInt() throws UnexpectedInput {
 		mark();
@@ -173,11 +181,12 @@ public class Scanner extends BacktrackScanner {
 	}
 
 	/**
-	 * Scan past a float-point constant and return its value as a {@code double}
+     * Scan past a floating-point constant and return its value as a
+     * {@code double}
 	 * 
 	 * @throws UnexpectedInput
-	 *             if the characters following the current position are not an double
-	 *             literal.
+     *             if the characters following the current position are not a
+     *             legal representation of a double literal.
 	 */
 	public double nextDouble() throws UnexpectedInput {
 		mark();
