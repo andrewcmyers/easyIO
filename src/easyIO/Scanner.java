@@ -45,8 +45,9 @@ public class Scanner extends BacktrackScanner {
 	}
 
     /** Scan past the specified string. 
-     *  @throws UnexpectedInput if anything other than the expected string is encountered,
-     *    leaving the scanner at the position where an unexpected character is reached.
+     *  @throws UnexpectedInput if anything other than the expected string
+     *       is encountered, leaving the scanner at the position where an
+     *       unexpected character is reached.
      */
     public void consume(String s) throws UnexpectedInput {
         for (int i = 0; i < s.length(); i++) {
