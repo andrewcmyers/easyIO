@@ -178,7 +178,7 @@ public class Scanner extends BacktrackScanner {
 	 *             if the characters following the current position are not an integer
 	 *             literal.
 	 */
-	int nextInt() throws UnexpectedInput {
+	public int nextInt() throws UnexpectedInput {
 		mark();
 		try {
 			integer();
