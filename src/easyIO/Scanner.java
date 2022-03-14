@@ -19,17 +19,21 @@ import java.io.Reader;
  */
 public class Scanner extends BacktrackScanner {
 		
+    /** Create a scanner that has no input source (yet). */
 	public Scanner() {
 	}
 	
-	/** Create scanner that reads from source input {@code r},
-        calling the source {@code name}. */
+	/** Create a scanner that reads from input source {@code r},
+     *  calling the source {@code name}.
+     *  @param r The input source
+     *  @param name The name of the input source
+     */
 	public Scanner(Reader r, String name) {
 		super();
 		includeSource(r, name);
 	}
 	
-	/** Create scanner that reads from file named {@code filename}. To read
+	/** Create a scanner that reads from file named {@code filename}. To read
 	 *  directly from a string, use a {@code StringReader}.
 	 *  @see java.io.StringReader
 	 */

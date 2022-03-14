@@ -17,29 +17,52 @@ import java.io.PrintWriter;
     
     */
 public class StdIO {
+    /** Standard input, as a {@code BufferedReader} */
 	final static public BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+
+    /** Standard input, as a {@code PrintWriter} */
 	final static public PrintWriter stdout = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
 	
 	protected StdIO() {}
 
+    /** Output a string to standard output.
+     *  @param s the string to print
+     */
 	public static void print(String s) {
 		stdout.print(s);
 	}
+    /** Output a string to standard output, followed by a newline.
+     *  @param s the string to print
+     */
 	public static void println(String s) {
 		stdout.println(s);
 	}
+    /** Output a newline to standard output. */
 	public static void println() {
 		stdout.println();
 	}
-	public static void print(int x) {
-		stdout.print(x);
-	}
+    /** Print a char to standard output.
+     *  @param c the char to print
+     */
 	public static void print(char c) {
 		stdout.print(c);
 	}
+    /** Print an int to standard output.
+     *  @param x the value to print
+     */
+	public static void print(int x) {
+		stdout.print(x);
+	}
+    /** Print an int to standard output, followed by a newline.
+     *  @param x the value to print
+     */
 	public static void println(int x) {
 		stdout.println(x);
 	}
+    /** Read a line from standard input.
+     *  Requires that there is a line to read.
+     *  @return the string read
+     */
 	public static String readln() {
 		try {
 			return stdin.readLine();

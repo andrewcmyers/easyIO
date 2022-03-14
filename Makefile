@@ -18,5 +18,8 @@ easyIO.zip:
 	cd src; zip -r ../easyIO.zip easyIO -x '*/Test.java' -x '*/.*'
 
 doc:
-	javadoc -notimestamp -public -author -d ../../web/javadoc/easyIO -sourcepath src   \
+	mkdir -p doc
+	javadoc -notimestamp -public -author -d doc -sourcepath src   \
             `find src/easyIO -name '*.java' | grep -v Test.java`
+
+.PHONY: doc
