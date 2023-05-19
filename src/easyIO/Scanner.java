@@ -233,7 +233,7 @@ public class Scanner extends BacktrackScanner {
 		mark();
 		while (hasNext()) {
 			try {
-				char c = next();
+				int c = nextCodePoint();
 				if (c == '\n') break;
 			} catch (EOF e) {
 				assert false;
@@ -284,9 +284,12 @@ public class Scanner extends BacktrackScanner {
 	 */
 	public void eol() {
 		while (true) {
-			if (!hasNext()) return;
-			if (peek() == '\n') return;
-			advance();
+			try {
+				int c = nextCodePoint();
+				if (c == '\n') return;
+			} catch (EOF e) {
+				return;
+			}
 		}
 	}
 	

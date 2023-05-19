@@ -28,6 +28,9 @@ public class BacktrackScanner {
         Reader reader;
         int lineno = 1;
         int charpos = 0;
+        /** A pending character to be delivered on next read(), if non-null. */
+        Location pending = null;
+
         Source(Reader r, String n) {
             name = n;
             reader = r;
@@ -38,15 +41,30 @@ public class BacktrackScanner {
 
         /** Return the next character location or null if eof is reached. */
         Location read() throws IOException {
+            if (pending != null) {
+                Location result = pending;
+                pending = null;
+                return result;
+            }
             int c = reader.read();
             if (c == -1) return null;
             if (c == '\n') {
                 lineno++;
                 charpos = 0;
             } else {
+                if (Character.isHighSurrogate((char) c)) {
+                    int lowS = reader.read();
+                    if (Character.isLowSurrogate((char) lowS)) {
+                        c = Character.toCodePoint((char) c, (char) lowS);
+                    } else {
+                        if (lowS != -1) {
+                            pending = new Location(this, lineno, charpos, (char) lowS);
+                        }
+                    }
+                }
                 charpos++;
             }
-            return new Location(this, lineno, charpos, (char) c);
+            return new Location(this, lineno, charpos, c);
         }
         public void close() throws IOException {
             reader.close();
@@ -58,28 +76,20 @@ public class BacktrackScanner {
      * character, and its line number and position within the line.
      */
     public static class Location {
-        public Location(Source i, int l, int c, char ch) {
+        public Location(Source i, int line, int column, int ch) {
             input = i;
-            lineno = l;
-            charpos = c;
+            lineno = line;
+            charpos = column;
             character = ch;
+            assert ch >= 0;
         }
         Source input;
         int lineno;
         int charpos;
-        char character;
+        int character;
         public String toString() {
-            StringBuilder s = new StringBuilder();
-            s.append('"');
-            s.append(input.name);
-            s.append("\", line ");
-            s.append(lineno);
-            s.append(", char ");
-            s.append(charpos);
-            s.append(" (");
-            s.append(character);
-            s.append(")");
-            return s.toString();
+            return '"' + input.name + "\", line " +
+                    lineno + ", char " + charpos + " (" + character + ")";
         }
     }
 
@@ -87,6 +97,11 @@ public class BacktrackScanner {
     Location[] buffer;
     int pos; // current input position (always in the deepest region)
     int end; // marks end of characters actually read in buffer (last is at end-1)
+
+    /** if non-zero, pendingChar is the low surrogate for a character whose
+     *  high surrogate has already been returned by read()
+     */
+    char pendingChar = 0;
 
     /** The stack of regions represented by their positions within prefix. Indices
      *  must increase monotonically.
@@ -135,7 +150,7 @@ public class BacktrackScanner {
                 w.append("[");
             }
             if (i == pos) w.append("^");
-            w.append(buffer[i].character);
+            w.appendCodePoint(buffer[i].character);
         }
         if (pos == end) w.append("^");
         w.append("...\n");
@@ -156,10 +171,18 @@ public class BacktrackScanner {
     public String source() {
         return inputs.getFirst().name;
     }
+    /** The current line number. Line numbers start from 1. */
     public int lineNo() {
         return inputs.getFirst().lineno;
     }
+    /** See {@code column} */
+    @Deprecated
     public int charPos() {
+        return column();
+    }
+    /** The current column number. Column numbers for printable characters start from 1,
+     *  with newlines occurring at column 0. */
+    public int column() {
         return inputs.getFirst().charpos;
     }
 
@@ -187,7 +210,8 @@ public class BacktrackScanner {
     static final EOF eof = new EOF();
     static final UnexpectedInput uinp = new UnexpectedInput();
 
-    /** The next character ahead in the input. Equivalent to begin(); c = next(); abort(); return c; */
+    /** The next character ahead in the input. Equivalent to {@code begin(); c = nextCodePoint(); abort(); return c;}
+     *  except that it returns -1 if the end of input has been reached. */
     public int peek() {
         if (charsAhead())
             return buffer[pos].character;
@@ -205,7 +229,7 @@ public class BacktrackScanner {
             try {
                 fst.close();
             } catch (IOException e) {
-                // XXX throw an exception here?
+                // It's only being read from so harmless to ignore?
             }
             if (inputs.size() == 0) return -1;
             return peek();
@@ -253,6 +277,7 @@ public class BacktrackScanner {
 
     /** Location in input source of the current position. */
     public Location location() {
+        if (pos == end) peek();
         return buffer[pos];
     }
     /** Location in input source of the last mark. */
@@ -285,12 +310,14 @@ public class BacktrackScanner {
         return nmarks;
     }
     /** Return a string containing the characters from the most recent mark to the current position. */
+
     public String getToken() {
         assert nmarks > 0 && invariant();
         StringBuilder r = new StringBuilder();
         int s = marks[nmarks-1];
-        for (int j = s; j < pos; j++)
-            r.append(buffer[j].character);
+        for (int j = s; j < pos; j++) {
+            r.appendCodePoint(buffer[j].character);
+        }
         return r.toString();
     }
 
@@ -312,16 +339,39 @@ public class BacktrackScanner {
         }
     }
 
-    /** Read the next character from the stream. */
+    final boolean lowSurrogate(int ch) {
+        return (ch >= 0xDC00 && ch <= 0xDFFF);
+    }
+
+    /** Read the next character from the stream. Throw EOF
+     *  if there is no next character. If the next character is
+     *  a Unicode supplementary character, it is reported by this
+     *  method as two chars in sequence, representing a surrogate pair.
+     */
     public char next() throws EOF {
-        if (charsAhead())
+        int ch = nextCodePoint();
+        if (Character.charCount(ch) == 1)
+            return (char) ch;
+        char[] chs = Character.toChars(ch);
+        pendingChar = chs[1];
+        return chs[0];
+    }
+
+    /** Read the next character from the stream. Throw EOF
+     *  if there is no next character. If the next character is
+     *  a Unicode supplementary character, it is reported by this
+     *  method as two chars in sequence, representing a surrogate pair.
+     */
+    public int nextCodePoint() throws EOF {
+        if (charsAhead()) {
             return buffer[pos++].character;
+        }
         try {
             if (inputs.size() == 0) throw eof;
             Location c = inputs.getFirst().read();
             if (c == null) {
                 inputs.removeFirst();
-                if (inputs.size() > 0) return next();
+                if (inputs.size() > 0) return nextCodePoint();
                 throw eof;
             }
             append(c);
@@ -347,7 +397,6 @@ public class BacktrackScanner {
             }
         }
         accept();
-        return;
     }
 
     @Override public String toString() {
