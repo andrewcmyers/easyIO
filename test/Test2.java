@@ -13,8 +13,13 @@ public class Test2 {
 			try {
 				double n = s.nextDouble();
 				System.out.println("Read number: " + n);
-			} catch (UnexpectedInput e) {	
-				System.out.println("Unexpected input at: " + s.location());
+			} catch (UnexpectedInput e) {
+				try {
+					System.out.println("Unexpected input at: " + s.location());
+				} catch (EOF exc) {
+					System.out.println("Should not happen");
+				}
+
 				break;
 			}
 		}
