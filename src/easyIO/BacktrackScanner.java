@@ -91,6 +91,12 @@ public class BacktrackScanner {
             return '"' + input.name + "\", line " +
                     lineno + ", char " + charpos + " (" + character + ")";
         }
+        public int lineNo() {
+            return lineno;
+        }
+        public int column() {
+            return charpos;
+        }
     }
 
     LinkedList<Source> inputs = new LinkedList<>();
@@ -216,12 +222,11 @@ public class BacktrackScanner {
         if (charsAhead())
             return buffer[pos].character;
         Location c;
+        if (inputs.isEmpty()) return -1;
         try {
             c = inputs.getFirst().read();
         } catch (IOException e) {
             c = null;
-        } catch (NoSuchElementException e) {
-            return -1;
         }
 
         if (c == null) {
@@ -276,9 +281,10 @@ public class BacktrackScanner {
     }
 
     /** Location in input source of the current position. */
-    public Location location() {
+    public Location location() throws EOF {
         if (pos == end) peek();
-        return buffer[pos];
+        if (pos < buffer.length) return buffer[pos];
+        else throw eof;
     }
     /** Location in input source of the last mark. */
     public Location getMarkLocation() {
