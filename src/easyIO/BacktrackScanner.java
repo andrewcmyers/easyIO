@@ -3,7 +3,6 @@ package easyIO;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.LinkedList;
-import java.util.NoSuchElementException;
 
 /**
  * A scanner class that, unlike {@code java.util.Scanner}, supports arbitrary
@@ -28,7 +27,7 @@ public class BacktrackScanner {
         Reader reader;
         int lineno = 1;
         int charpos = 0;
-        /** A pending character to be delivered on next read(), if non-null. */
+        /** A pending character to be delivered on next read(), if non-null. (Used for low surrogates) */
         Location pending = null;
 
         Source(Reader r, String n) {
@@ -100,6 +99,9 @@ public class BacktrackScanner {
     }
 
     LinkedList<Source> inputs = new LinkedList<>();
+
+    /** Input from suspended sources that should be restored once this input completes. */
+    LinkedList<Location[]> suspendedInput = new LinkedList<>();
     Location[] buffer;
     int pos; // current input position (always in the deepest region)
     int end; // marks end of characters actually read in buffer (last is at end-1)
@@ -113,7 +115,7 @@ public class BacktrackScanner {
      *  must increase monotonically.
      *       prefix            unread input (from linked list)
      *  [...[....[...^....     .........$
-     *  0   1    2   pos  len           eof
+     *  0   1    2   pos  end           eof
      *  marks
      */
     int[] marks;
@@ -126,26 +128,25 @@ public class BacktrackScanner {
         assert nmarks == 0 || pos >= marks[nmarks-1] && pos <= end;
         for (int i = 0; i < nmarks; i++) {
             assert marks[i] <= pos;
-            if (i > 0) assert marks[i] >= marks[i-1];
+            assert i <= 0 || marks[i] >= marks[i - 1];
         }
         return true;
     }
     /** Dump the state of the scanner to w in a human-readable form. */
     public void dump(StringBuilder w) {
-        w.append("[Scanner buffer length=" + buffer.length);
-        w.append(" pos=" + pos);
-        w.append(" end=" + end);
-        w.append(" nmarks=" + nmarks);
+        w.append("[Scanner buffer length=").append(buffer.length)
+         .append(" pos=").append(pos)
+         .append(" end=").append(end)
+         .append(" nmarks=").append(nmarks);
         if (nmarks > 0) {
             for (int i = 0; i < nmarks; i++) {
-                w.append(i == 0 ? " [" : ", ");
-                w.append(marks[i]);
+                w.append(i == 0 ? " [" : ", ").append(marks[i]);
             }
             w.append(']');
         }
 
-        if (pos < end) w.append("\ncurrent = " + buffer[pos]);
-        w.append(" \nCurrent source: " + source() + "\nBuffer: ");
+        if (pos < end) w.append("\ncurrent = ").append(buffer[pos]);
+        w.append(" \nCurrent source: ").append(source()).append("\nBuffer: ");
 
         int m = 0;
         int start = nmarks > 0 ? marks[0] : pos;
@@ -196,11 +197,16 @@ public class BacktrackScanner {
     public void includeSource(Reader r, String name) {
         Source i = new Source(r, name);
         inputs.addFirst(i);
+        Location[] suspended = new Location[end-pos];
+        System.arraycopy(buffer, pos, suspended, 0, end-pos);
+        suspendedInput.addFirst(suspended);
+        end = pos;
     }
     /** Add r to the input stream after existing inputs. */
     public void appendSource(Reader r, String name) {
         Source i = new Source(r, name);
         inputs.addLast(i);
+        suspendedInput.addLast(new Location[0]);
     }
 
     /** Whether there are characters already read ahead of the current position. */
@@ -230,7 +236,7 @@ public class BacktrackScanner {
         }
 
         if (c == null) {
-            Source fst = inputs.removeFirst();
+            Source fst = removeInput();
             try {
                 fst.close();
             } catch (IOException e) {
@@ -243,6 +249,14 @@ public class BacktrackScanner {
         append(c);
         assert invariant();
         return c.character;
+    }
+
+    private Source removeInput() {
+        Source result = inputs.removeFirst();
+        assert pos == end; // buffer must be empty
+        Location[] suspended = suspendedInput.removeFirst();
+        for (Location l : suspended) append(l);
+        return result;
     }
 
     private void append(Location loc) {
@@ -342,10 +356,11 @@ public class BacktrackScanner {
         try {
             next();
         } catch (EOF e) {
+            // do nothing
         }
     }
 
-    final boolean lowSurrogate(int ch) {
+    public final boolean lowSurrogate(int ch) {
         return (ch >= 0xDC00 && ch <= 0xDFFF);
     }
 
