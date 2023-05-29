@@ -87,8 +87,20 @@ public class BacktrackScanner {
         int charpos;
         int character;
         public String toString() {
+            String cs = String.valueOf((char) character);
+            if (character < ' ') {
+                String hex = "0123456789abcdef";
+                switch (character) {
+                    case '\n': cs = "\\n"; break;
+                    case '\t': cs = "\\t"; break;
+                    case '\r': cs = "\\r"; break;
+                    case '\b': cs = "\\b"; break;
+                    default:
+                        cs = "\\x{" + hex.charAt(character/16) + hex.charAt(character % 16) + "}";
+                }
+            }
             return '"' + input.name + "\", line " +
-                    lineno + ", char " + charpos + " (" + character + ")";
+                    lineno + ", char " + charpos + " (" + cs + ")";
         }
         public int lineNo() {
             return lineno;
