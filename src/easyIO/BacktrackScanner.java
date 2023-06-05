@@ -202,7 +202,11 @@ public class BacktrackScanner {
     /** The current column number. Column numbers for printable characters start from 1,
      *  with newlines occurring at column 0. */
     public int column() {
-        return inputs.getFirst().charpos;
+        try {
+            return location().column();
+        } catch (EOF e) {
+            return inputs.getFirst().charpos;
+        }
     }
 
     /** Add r to the input stream ahead of any existing inputs.*/
