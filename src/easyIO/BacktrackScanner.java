@@ -22,24 +22,50 @@ import java.util.LinkedList;
  * @see easyIO.Scanner easyIO.Scanner
  */
 public class BacktrackScanner {
-     private static class Source {
-        String name;
-        Reader reader;
-        int lineno = 1;
-        int charpos = 0;
-        /** A pending character to be delivered on next read(), if non-null. (Used for low surrogates) */
-        Location pending = null;
 
-        Source(Reader r, String n) {
+     /** A source of input for the scanner. */
+     interface Source {
+         /** The name of the source, for diagnostic purposes. */
+         String name();
+         /** The current line number of the source */
+         int lineNo();
+         /** The current column of the source */
+         int column();
+         /** Return the next character location or null if eof is reached. */
+         Location read() throws IOException;
+         void close() throws IOException;
+     }
+
+    /** A source of input for the scanner in which the input comes from a Reader. */
+     private static class ReaderSource implements Source {
+        private String name;
+        private Reader reader;
+        private int lineno = 1;
+        private int charpos = 0;
+        /** A pending character to be delivered on next read(), if non-null. (Used for low surrogates) */
+        private Location pending = null;
+
+        public ReaderSource(Reader r, String n) {
             name = n;
             reader = r;
         }
+        @Override
         public String toString() {
             return "\"" + name + "\", line " + lineno + ", character " + charpos;
         }
+        @Override
+        public String name() { return name; }
+        @Override
+        public int lineNo() {
+            return lineno;
+        }
+        @Override
+        public int column() {
+            return charpos;
+        }
 
         /** Return the next character location or null if eof is reached. */
-        Location read() throws IOException {
+        public Location read() throws IOException {
             if (pending != null) {
                 Location result = pending;
                 pending = null;
@@ -99,7 +125,7 @@ public class BacktrackScanner {
                         cs = "\\x{" + hex.charAt(character/16) + hex.charAt(character % 16) + "}";
                 }
             }
-            return '"' + input.name + "\", line " +
+            return '"' + input.name() + "\", line " +
                     lineno + ", char " + charpos + " (" + cs + ")";
         }
         public int lineNo() {
@@ -188,11 +214,11 @@ public class BacktrackScanner {
         }
     }
     public String source() {
-        return inputs.getFirst().name;
+        return inputs.getFirst().name();
     }
     /** The current line number. Line numbers start from 1. */
     public int lineNo() {
-        return inputs.getFirst().lineno;
+        return inputs.getFirst().lineNo();
     }
     /** See {@code column} */
     @Deprecated
@@ -205,13 +231,13 @@ public class BacktrackScanner {
         try {
             return location().column();
         } catch (EOF e) {
-            return inputs.getFirst().charpos;
+            return inputs.getFirst().column();
         }
     }
 
     /** Add r to the input stream ahead of any existing inputs.*/
     public void includeSource(Reader r, String name) {
-        Source i = new Source(r, name);
+        Source i = new ReaderSource(r, name);
         inputs.addFirst(i);
         Location[] suspended = new Location[end-pos];
         System.arraycopy(buffer, pos, suspended, 0, end-pos);
@@ -220,7 +246,7 @@ public class BacktrackScanner {
     }
     /** Add r to the input stream after existing inputs. */
     public void appendSource(Reader r, String name) {
-        Source i = new Source(r, name);
+        Source i = new ReaderSource(r, name);
         inputs.addLast(i);
         suspendedInput.addLast(new Location[0]);
     }
