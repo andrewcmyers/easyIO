@@ -371,8 +371,8 @@ public class BacktrackScanner {
     public int depth() {
         return nmarks;
     }
-    /** Return a string containing the characters from the most recent mark to the current position. */
 
+    /** Return a string containing the characters from the most recent mark to the current position. */
     public String getToken() {
         assert nmarks > 0 && invariant();
         StringBuilder r = new StringBuilder();
