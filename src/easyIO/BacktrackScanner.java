@@ -1,8 +1,11 @@
 package easyIO;
 
+import prelatex.tokens.MacroName;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
 /**
  * A scanner class that, unlike {@code java.util.Scanner}, supports arbitrary
@@ -23,8 +26,12 @@ import java.util.LinkedList;
  */
 public class BacktrackScanner {
 
-     /** A source of input for the scanner. */
-     interface Source {
+    public BacktrackScanner(Source s) {
+        includeSource(s);
+    }
+
+    /** A source of input for the scanner. */
+    public interface Source {
          /** The name of the source, for diagnostic purposes. */
          String name();
          /** The current line number of the source */
@@ -235,15 +242,31 @@ public class BacktrackScanner {
         }
     }
 
-    /** Add r to the input stream ahead of any existing inputs.*/
-    public void includeSource(Reader r, String name) {
-        Source i = new ReaderSource(r, name);
-        inputs.addFirst(i);
+    /** The current source of input. Throw EOF if there is no
+     *  input source.
+     */
+    public Source currentSource() throws EOF {
+        try {
+            return inputs.getFirst();
+        } catch (NoSuchElementException e) {
+            throw eof;
+        }
+    }
+
+    public void includeSource(Source s) {
+        inputs.addFirst(s);
         Location[] suspended = new Location[end-pos];
         System.arraycopy(buffer, pos, suspended, 0, end-pos);
         suspendedInput.addFirst(suspended);
         end = pos;
     }
+
+    /** Add r to the input stream ahead of any existing inputs.*/
+    public void includeSource(Reader r, String name) {
+        Source i = new ReaderSource(r, name);
+        includeSource(i);
+    }
+
     /** Add r to the input stream after existing inputs. */
     public void appendSource(Reader r, String name) {
         Source i = new ReaderSource(r, name);

@@ -22,6 +22,10 @@ public class Scanner extends BacktrackScanner {
     /** Create a scanner that has no input source (yet). */
 	public Scanner() {
 	}
+
+	public Scanner(Source s) {
+		super(s);
+	}
 	
 	/** Create a scanner that reads from input source {@code r},
      *  calling the source {@code name}.
