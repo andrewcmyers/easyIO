@@ -1,4 +1,5 @@
 default: classfiles
+SHELL=/bin/bash
 
 TARGETS = easyIO.jar easyIO.zip
 
