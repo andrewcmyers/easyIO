@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+}
+
+group = 'easyIO'
+version = '1.0'
+
+sourceCompatibility = '1.21'
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
