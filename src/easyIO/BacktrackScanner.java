@@ -410,6 +410,7 @@ public class BacktrackScanner extends java.io.Reader {
     @Override public void reset() throws IOException {
         try {
             abort();
+            mark();
         } catch (UnsupportedOperationException e) {
             throw new IOException("reset");
         }
