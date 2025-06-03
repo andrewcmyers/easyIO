@@ -1,16 +1,32 @@
 plugins {
     id 'java'
 }
+repositories {
+    mavenCentral()
+}
 
 group = 'easyIO'
 version = '1.0'
 
 sourceCompatibility = '1.21'
 
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
 sourceSets {
     main {
         java {
             srcDirs = ['src']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['test']
         }
     }
 }

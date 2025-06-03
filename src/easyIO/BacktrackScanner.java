@@ -2,6 +2,7 @@ package easyIO;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
@@ -22,7 +23,7 @@ import java.util.NoSuchElementException;
  *
  * @see easyIO.Scanner easyIO.Scanner
  */
-public class BacktrackScanner {
+public class BacktrackScanner extends java.io.Reader {
 
     public BacktrackScanner(Source s) {
         includeSource(s);
@@ -212,6 +213,11 @@ public class BacktrackScanner {
         marks = new int[INITIAL_SIZE];
         nmarks = 0;
     }
+    /** Create a scanner that immediately starts reading from this Reader. */
+    public BacktrackScanner(Reader rdr) {
+        this();
+        includeSource(rdr, "input");
+    }
 
     public void close() throws IOException {
         for (Source i : inputs) {
@@ -284,6 +290,20 @@ public class BacktrackScanner {
 
     static final EOF eof = new EOF();
     static final UnexpectedInput uinp = new UnexpectedInput();
+
+    @Override public int read(char[] cbuf, int off, int len) {
+        if (!hasNext()) return -1;
+        int count = 0;
+        try {
+            while (hasNext() && count < len) {
+                cbuf[off++] = next();
+                count++;
+            }
+        } catch (EOF e) {
+            /* stop */
+        }
+        return count;
+    }
 
     /** The next character ahead in the input. Equivalent to {@code begin(); c = nextCodePoint(); abort(); return c;}
      *  except that it returns -1 if the end of input has been reached. */
@@ -379,6 +399,22 @@ public class BacktrackScanner {
         marks[nmarks++] = pos;
     }
 
+    @Override public boolean markSupported() {
+        return true;
+    }
+
+    @Override public void mark(int readlimit) {
+        mark();
+    }
+
+    @Override public void reset() throws IOException {
+        try {
+            abort();
+        } catch (UnsupportedOperationException e) {
+            throw new IOException("reset");
+        }
+    }
+
     /** Effect: Erase the previous mark from the input, effectively
      *  accepting all input up to the current position. */
     public void accept() {
@@ -407,8 +443,10 @@ public class BacktrackScanner {
     /**
      * Roll the input position back to the most recent mark, and erase the mark,
      * effectively restarting scanning from that position.
+     * Checks: a mark exists. Otherwise throws UnsupportedOperationException.
      */
     public void abort() {
+        if (nmarks == 0) throw new UnsupportedOperationException();
         assert nmarks > 0;
         pos = marks[nmarks-1];
         nmarks--;
