@@ -6,7 +6,8 @@ import easyIO.Recognizer.Success;
 /** Regular expression support for {@code easyIO.Scanner}
  * @see easyIO.Scanner easyIO.Scanner */
 public class Regex {
-	
+
+
 	protected Regex() {}
 	
 	final static Success success = new Success();

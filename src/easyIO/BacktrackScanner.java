@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 public class BacktrackScanner extends java.io.Reader {
 
     public BacktrackScanner(Source s) {
+        this();
         includeSource(s);
     }
 
@@ -43,7 +44,7 @@ public class BacktrackScanner extends java.io.Reader {
      }
 
     /** A source of input for the scanner in which the input comes from a Reader. */
-     private static class ReaderSource implements Source {
+     public static class ReaderSource implements Source {
         private String name;
         private Reader reader;
         private int lineno = 1;
@@ -51,6 +52,7 @@ public class BacktrackScanner extends java.io.Reader {
         /** A pending character to be delivered on next read(), if non-null. (Used for low surrogates) */
         private Location pending = null;
 
+        /** Create a source named n whose input comes from r */
         public ReaderSource(Reader r, String n) {
             name = n;
             reader = r;
@@ -145,15 +147,15 @@ public class BacktrackScanner extends java.io.Reader {
     LinkedList<Source> inputs = new LinkedList<>();
 
     /** Input from suspended sources that should be restored once this input completes. */
-    LinkedList<Location[]> suspendedInput = new LinkedList<>();
-    Location[] buffer;
-    int pos; // current input position (always in the deepest region)
-    int end; // marks end of characters actually read in buffer (last is at end-1)
+    private LinkedList<Location[]> suspendedInput = new LinkedList<>();
+    private Location[] buffer;
+    private int pos; // current input position (always in the deepest region)
+    private int end; // marks end of characters actually read in buffer (last is at end-1)
 
     /** if non-zero, pendingChar is the low surrogate for a character whose
      *  high surrogate has already been returned by read()
      */
-    char pendingChar = 0;
+    private char pendingChar = 0;
 
     /** The stack of regions represented by their positions within prefix. Indices
      *  must increase monotonically.
@@ -162,9 +164,9 @@ public class BacktrackScanner extends java.io.Reader {
      *  0   1    2   pos  end           eof
      *  marks
      */
-    int[] marks;
+    private int[] marks;
     int nmarks;
-    static final int INITIAL_SIZE = 1;
+    private static final int INITIAL_SIZE = 1;
 
     public boolean invariant() {
         assert nmarks >= 0;
