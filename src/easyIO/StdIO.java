@@ -36,10 +36,11 @@ public class StdIO {
      */
 	public static void println(String s) {
 		stdout.println(s);
+		stdout.flush();
 	}
     /** Output a newline to standard output. */
 	public static void println() {
-		stdout.println();
+		stdout.println(); stdout.flush();
 	}
     /** Print a char to standard output.
      *  @param c the char to print
