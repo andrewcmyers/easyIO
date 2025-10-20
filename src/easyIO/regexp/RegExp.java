@@ -1,10 +1,7 @@
 package easyIO.regexp;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 
 import static easyIO.StdIO.println;
 
@@ -27,8 +24,9 @@ public abstract class RegExp {
     }
 
     /** Regular expressions are interned so that there is only one instance of
-     * an equal regular expression. This is the canonical representation of the
-     * regular expression.
+     * an equal regular expression. This is the canonical instance representing
+     * that regular expression. The factory methods for regular expressions all
+     * produces canonical instances.
      */
     static RegExp canonicalize(RegExp r) {
         RegExp result = regExps.get(r);
@@ -38,28 +36,28 @@ public abstract class RegExp {
         }
         return result;
     }
-    /** The Brzozowski derivative of this regular expression. */
+    /** The (canonical) Brzozowski derivative of this regular expression. */
     public RegExp derivative(int codepoint) {
         RegExp derivative = derivatives.get(codepoint);
         if (derivative == null) {
             if (DEBUG) {
                 println("Computing derivative of " + this + " (" + address() + ") with symbol " + Character.toString(codepoint));
             }
-            derivative = canonicalize(computeDerivative(codepoint));
+            derivative = computeDerivative(codepoint);
             derivatives.put(codepoint, derivative);
         }
         return derivative;
     }
 
-    public Matcher.State scan(int codepoint, Match match) {
+    public Matcher.State scan(int codepoint, Matcher matcher) {
         var derivative = derivative(codepoint);
-        return new Matcher.State(derivative, updateMatch(match, codepoint));
+        return new Matcher.State(derivative);
     }
 
-    protected abstract Match updateMatch(Match match, int codepoint);
-
     /** The Brzozowski derivative of this regular expression, computed without
-     * relying on the derivative cache to contain this derivative. */
+     * relying on the derivative cache to contain this derivative. It is provided
+     * by subclasses. It always produces a canonical RE.
+     */
     protected abstract RegExp computeDerivative(int codepoint);
 
     public String toString() {

@@ -2,7 +2,7 @@ package easyIO.regexp;
 
 import static easyIO.regexp.Concat.concat;
 
-/** Kleene Star RE */
+/** Kleene Star RE (r*) */
 public class StarRE extends RegExp {
     private final RegExp expr;
     private StarRE(RegExp r) {
@@ -20,16 +20,13 @@ public class StarRE extends RegExp {
         if (r instanceof StarRE s) {
             return s;
         }
-        return RegExp.canonicalize(new StarRE(r));
+        return canonicalize(new StarRE(r));
     }
+    /** A canonical regular expression equivalent to r+
+     * (Unix notation for 1 or more consecutive matches)
+     */
     public static RegExp oneOrMore(RegExp r) {
         return concat(r, star(r));
-    }
-
-    @Override
-    protected Match updateMatch(Match match, int codepoint) {
-        match.accept(codepoint);
-        return match;
     }
 
     @Override

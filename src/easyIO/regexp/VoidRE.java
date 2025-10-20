@@ -9,11 +9,6 @@ public class VoidRE extends RegExp {
         return false;
     }
 
-    @Override
-    protected Match updateMatch(Match match, int codepoint) {
-        return match;
-    }
-
     public static RegExp create() {
         return theRE;
     }
@@ -31,7 +26,7 @@ public class VoidRE extends RegExp {
 
     @Override
     public void appendString(StringBuilder b, int precedence) {
-        b.append("[^]");
+        b.append("[]");
     }
 
     @Override

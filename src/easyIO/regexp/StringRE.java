@@ -6,28 +6,29 @@ import static easyIO.StdIO.println;
  * A string of characters, possibly empty
  */
 public class StringRE extends RegExp {
-    private static final RegExp theRE = new StringRE("");
-    private final String string;
+    private static final RegExp empty = new StringRE("");
+    private final String chars;
 
     private StringRE(String s) {
-        string = s;
+        chars = s;
     }
 
     public static RegExp string(String s) {
-        return RegExp.canonicalize(new StringRE(s));
+        return canonicalize(new StringRE(s));
     }
 
     public static RegExp empty() {
-        return theRE;
+        return empty;
     }
 
     public boolean nullable() {
-        return string.isEmpty();
+        return chars.isEmpty();
     }
 
     @Override
-    protected Match updateMatch(Match match, int codepoint) {
-        return match;
+    public RegExp derivative(int codepoint) {
+        if (chars.isEmpty()) return VoidRE.create();
+        return super.derivative(codepoint);
     }
 
     protected RegExp computeDerivative(int codepoint) {
@@ -36,30 +37,30 @@ public class StringRE extends RegExp {
         // Dx y = 0  (y ≠ x)
         // so Dx xa = a
         //    Dx ya = 0
-        if (!string.isEmpty() && string.charAt(0) == codepoint) {
-            return new StringRE(string.substring(1));
+        if (!chars.isEmpty() && chars.charAt(0) == codepoint) {
+            return string(chars.substring(1));
         }
         return VoidRE.create();
     }
 
     @Override
     public void appendString(StringBuilder b, int precedence) {
-        b.append(quote(string));
+        b.append(quote(chars));
     }
 
     @Override
     public boolean equals(Object o) {
         if (o instanceof StringRE r) {
-            return string.equals(r.string);
+            return chars.equals(r.chars);
         }
         return false;
     }
 
     @Override public int hashCode() {
-        return string.hashCode();
+        return chars.hashCode();
     }
 
-    private String quote(String s) {
+    public static String quote(String s) {
         StringBuffer b = new StringBuffer();
         s.codePoints().forEach((int i) -> {
             switch (i) {

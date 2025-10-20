@@ -8,6 +8,8 @@ import static easyIO.regexp.AlternationRE.alt;
 import static easyIO.regexp.StringRE.empty;
 import static easyIO.regexp.StringRE.string;
 
+/** A regular expression of the form r1r2r3...
+ */
 public class Concat extends RegExp {
     private final RegExp[] exprs;
 
@@ -31,7 +33,7 @@ public class Concat extends RegExp {
         return switch (exprs.length) {
             case 0 -> empty();
             case 1 -> exprs[0];
-            default -> RegExp.canonicalize(new Concat(exprs));
+            default -> canonicalize(new Concat(exprs));
         };
     }
 
@@ -48,11 +50,6 @@ public class Concat extends RegExp {
     }
 
     @Override
-    protected Match updateMatch(Match match, int codepoint) {
-        return match;
-    }
-
-    @Override
     protected RegExp computeDerivative(int codepoint) {
         // Dx (ab) = (Dx a) b + (n a) (Dx b)
         assert exprs.length > 1;
@@ -63,7 +60,10 @@ public class Concat extends RegExp {
             for (int j = 1; j < args.length; j++) {
                 args[j] = exprs[i + j];
             }
-            result = alt(result, concat(args));
+            if (args.length == 1)
+                result = alt(result, args[0]);
+            else
+                result = alt(result, concat(args));
             if (!exprs[i].nullable()) break;
         }
         return result;

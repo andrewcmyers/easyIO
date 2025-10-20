@@ -4,9 +4,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static easyIO.StdIO.println;
+import static easyIO.regexp.CharacterClass.anyChar;
+import static easyIO.regexp.StarRE.star;
 import static easyIO.regexp.StringRE.string;
 
+/**
+ * A regular expression of the form r1|r2|r3|...|rn  (n >= 2)
+ */
 public class AlternationRE extends RegExp {
     private final RegExp[] exprs;
     private boolean isVoid, computedVoid = false;
@@ -26,11 +30,6 @@ public class AlternationRE extends RegExp {
         return Arrays.stream(exprs).anyMatch(RegExp::nullable);
     }
 
-    @Override
-    protected Match updateMatch(Match match, int codepoint) {
-        return new AlternationMatch(match, codepoint);
-    }
-
     static private RegExp[] RegExps = {};
 
     @Override
@@ -47,22 +46,30 @@ public class AlternationRE extends RegExp {
         // alternation is simplified by:
         //  1) flattening nested alternatives
         //  2) dropping void alternatives
-        //  3) combining equal alternatives
+        //  3) dropping redundant alternatives
+        //  4) sorting alternatives
         Set<RegExp> uniques =
                 Arrays.stream(exprs).filter(r -> !r.isVoid())
                         .flatMap(AlternationRE::flatten)
                         .collect(Collectors.toSet());
+        if (uniques.contains(everything)) return everything;
         RegExp[] uniques_a = uniques.toArray(RegExps);
         Arrays.sort(uniques_a, Comparator.comparingInt(RegExp::hashCode));
         return switch (uniques_a.length) {
             case 0 -> VoidRE.create();
             case 1 -> uniques_a[0];
-            default -> RegExp.canonicalize(new AlternationRE(uniques.toArray(RegExps)));
+            default -> canonicalize(new AlternationRE(uniques.toArray(RegExps)));
         };
     }
+    /** A canonical RE for r? (Unix regex notation) */
     public static RegExp optional(RegExp r) {
         return alt(r, string(""));
     }
+
+    public static final RegExp everything = star(anyChar());
+
+    /** Recursively flatten alternatives in r.
+     * E.g., (R+S)+(T+(U+V)) becomes R+S+T+U+V. */
     static Stream<RegExp> flatten(RegExp r) {
         if (r instanceof AlternationRE a) {
             return Arrays.stream(a.exprs).flatMap(AlternationRE::flatten);
@@ -96,28 +103,12 @@ public class AlternationRE extends RegExp {
         return false;
     }
 
-    class AlternationMatch implements Match {
-        Match[] alternatives;
-        Match parent;
-
-        public AlternationMatch(Match match, int codepoint) {
-            parent = match;
-            alternatives = new Match[0];
-            alternatives = Arrays.stream(exprs).map(r -> r.updateMatch(match, codepoint))
-                    .toList().toArray(alternatives);
+    @Override public int hashCode() {
+        int result = 0;
+        for (int i = 0; i < exprs.length; i++) {
+            result *= 101;
+            result += exprs[i].hashCode();
         }
-
-        @Override
-        public boolean success() {
-            return false;
-        }
-
-        @Override
-        public Match accept(int codepoint) {
-            for (Match m : alternatives) {
-                m.accept(codepoint);
-            }
-            return this;
-        }
+        return result;
     }
 }
