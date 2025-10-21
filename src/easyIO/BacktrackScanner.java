@@ -150,7 +150,7 @@ public class BacktrackScanner extends java.io.Reader {
     private Location[] buffer;
     private int pos; // current input position (always in the deepest region)
     private int end; // marks end of characters actually read in buffer (last is at end-1)
-    private int bufferOffset; // offset in characters to the beginning of the buffer
+    private int bufferOffset; // offset in characters from the input start to the beginning of the buffer
 
     /** if non-zero, pendingChar is the low surrogate for a character whose
      *  high surrogate has already been returned by read()
@@ -213,6 +213,7 @@ public class BacktrackScanner extends java.io.Reader {
         buffer = new Location[INITIAL_SIZE];
         pos = 0;
         end = 0;
+        bufferOffset = 0;
         marks = new int[INITIAL_SIZE];
         nmarks = 0;
     }
@@ -227,18 +228,17 @@ public class BacktrackScanner extends java.io.Reader {
             i.close();
         }
     }
+
+    /** Name of the current input source. */
     public String source() {
         return inputs.getFirst().name();
     }
+
     /** The current line number. Line numbers start from 1. */
     public int lineNo() {
         return inputs.getFirst().lineNo();
     }
-    /** See {@code column} */
-    @Deprecated
-    public int charPos() {
-        return column();
-    }
+
     /** The current column number. Column numbers for printable characters start from 1,
      *  with newlines occurring at column 0. */
     public int column() {
@@ -267,6 +267,9 @@ public class BacktrackScanner extends java.io.Reader {
         }
     }
 
+    /** Include a new input source to the input stream starting at the current position and
+     * ahead of any existing inputs.
+     */
     public void includeSource(Source s) {
         inputs.addFirst(s);
         Location[] suspended = new Location[end-pos];
@@ -275,7 +278,7 @@ public class BacktrackScanner extends java.io.Reader {
         end = pos;
     }
 
-    /** Add r to the input stream ahead of any existing inputs.*/
+    /** Include r in the input stream ahead of any existing inputs.*/
     public void includeSource(Reader r, String name) {
         Source i = new ReaderSource(r, name);
         includeSource(i);
