@@ -20,6 +20,16 @@ public class Matcher {
         expr = r;
         state = new State(r);
     }
+    /** Create a matcher based on a regular expression to be parsed.
+     * Requires: the regular expression must be valid. */
+    public Matcher(String pat) {
+        try {
+            expr = Parser.parse(pat);
+        } catch (Parser.SyntaxError e) {
+            throw new IllegalArgumentException("Invalid regular expression: " + pat);
+        }
+        state = new State(expr);
+    }
 
     public record State (
         RegExp re

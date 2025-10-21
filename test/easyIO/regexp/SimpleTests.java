@@ -13,6 +13,7 @@ import static easyIO.regexp.Capture.capture;
 import static easyIO.regexp.CharacterClass.anyChar;
 import static easyIO.regexp.CharacterClass.range;
 import static easyIO.regexp.Concat.concat;
+import static easyIO.regexp.Parser.parse;
 import static easyIO.regexp.StarRE.star;
 import static easyIO.regexp.StringRE.string;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -274,6 +275,34 @@ public class SimpleTests {
             }
             m.search(sc);
             assertEquals("!", sc.getToken());
+        } catch (Matcher.FailedMatch e) {
+            fail();
+        }
+    }
+    @Test void test23() throws Parser.SyntaxError {
+        RegExp r = parse("abc");
+        assertEquals("/abc/", r.toString());
+    }
+    @Test void test24() throws Parser.SyntaxError {
+        RegExp r = parse("ab|c");
+        assertEquals("/ab|c/", r.toString());
+    }
+    @Test void test25() throws Parser.SyntaxError {
+        RegExp r = parse("a(ab)*|c");
+        assertEquals("/c|a(ab)*/", r.toString());
+    }
+    @Test void test26() throws Parser.SyntaxError {
+        try {
+            new Matcher(parse("a(ab)*|c")).match("aabab");
+        } catch (Matcher.FailedMatch e) {
+            fail();
+        }
+    }
+    @Test void test27() {
+        try {
+            new Matcher("a(ab)*|c").match("aabab");
+            new Matcher("a(ab)*|c").match("a");
+            new Matcher("a(ab)*|c").match("c");
         } catch (Matcher.FailedMatch e) {
             fail();
         }

@@ -91,4 +91,5 @@ public abstract class RegExp {
     String address() {
         return super.toString();
     }
+    public static final RegExp[] RegExps = {};
 }

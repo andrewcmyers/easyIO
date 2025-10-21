@@ -45,7 +45,9 @@ public class StringRE extends RegExp {
 
     @Override
     public void appendString(StringBuilder b, int precedence) {
+        if (precedence > 2 && chars.length() > 1) b.append('(');
         b.append(quote(chars));
+        if (precedence > 2 && chars.length() > 1) b.append(')');
     }
 
     @Override

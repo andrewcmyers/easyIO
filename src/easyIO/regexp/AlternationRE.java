@@ -30,7 +30,6 @@ public class AlternationRE extends RegExp {
         return Arrays.stream(exprs).anyMatch(RegExp::nullable);
     }
 
-    static private RegExp[] RegExps = {};
 
     @Override
     protected RegExp computeDerivative(int codepoint) {
