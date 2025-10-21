@@ -1,6 +1,10 @@
 package easyIO.regexp;
 
+import easyIO.BacktrackScanner;
+import easyIO.EOF;
 import org.junit.jupiter.api.Test;
+
+import java.io.StringReader;
 
 import static easyIO.StdIO.println;
 import static easyIO.StdIO.readln;
@@ -20,35 +24,31 @@ public class SimpleTests {
     }
 
     private void run() {
-        println("Press Enter when ready to start");
+        println("Press Return when ready to start");
         readln();
-        test1();
-        test2();
-        test3();
-        test4();
-        test5();
-        test6();
-        test7();
-        test8();
-        test9();
+        test01();
+        test02();
+        test03();
+        test04();
+        test05();
+        test06();
+        test07();
+        test08();
+        test09();
         test10();
-        for (int i = 1; i < 100000; i++) {
-            test10();
-        }
-        readln();
     }
 
-    @Test void test1() {
+    @Test void test01() {
         RegExp r = string("abc");
         Matcher m = new Matcher(r);
         try {
             m.match("abc");
         } catch (Matcher.FailedMatch e) {
-            println("No match");
+            fail();
         }
     }
 
-    @Test void test2() {
+    @Test void test02() {
         RegExp r = alt(string("abc"), string("aba"));
         try {
             new Matcher(r).match("abc");
@@ -56,7 +56,7 @@ public class SimpleTests {
             fail();
         }
     }
-    @Test void test3() {
+    @Test void test03() {
         RegExp r = alt(concat(string("a"), capture(string("b")), string("a")),
                        concat(string("ab"), capture(string("c"))));
         try {
@@ -65,7 +65,7 @@ public class SimpleTests {
             fail();
         }
     }
-    @Test void test4() {
+    @Test void test04() {
         RegExp r = concat(
                 string("x"),
                 capture(concat(string("b"),
@@ -76,11 +76,10 @@ public class SimpleTests {
         try {
             m.match("xbdefy");
         } catch (Matcher.FailedMatch e) {
-            println("No match");
             fail();
         }
     }
-    @Test void test5() {
+    @Test void test05() {
         RegExp r = concat(
                         string("x"),
                         capture(concat(string("b"),
@@ -92,10 +91,9 @@ public class SimpleTests {
             m.match("xabdefy");
             fail();
         } catch (Matcher.FailedMatch e) {
-            println("No match");
         }
     }
-    @Test void test6() {
+    @Test void test06() {
         RegExp r = concat(string("x"),
                      capture(star(string("ab"))),
                      string("y"));
@@ -103,11 +101,10 @@ public class SimpleTests {
         try {
             m.match("xababy");
         } catch (Matcher.FailedMatch e) {
-            println("No match");
             fail();
         }
     }
-    @Test void test7() {
+    @Test void test07() {
         // R = (a|aa)*a(a|aa)*
         // Derivative dR =
         // (|a)R|(a|aa)*
@@ -126,7 +123,7 @@ public class SimpleTests {
             fail();
         }
     }
-    @Test void test8() {
+    @Test void test08() {
         RegExp r = alt(string("yx"), string("xy"));
         Matcher m = new Matcher(r);
         try {
@@ -135,7 +132,7 @@ public class SimpleTests {
             fail();
         }
     }
-    @Test void test9() {
+    @Test void test09() {
         RegExp r = alt(string("y"), string("y"));
         Matcher m = new Matcher(r);
         try {
@@ -237,5 +234,48 @@ public class SimpleTests {
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
+    }
+    @Test void test20() {
+        RegExp r = string("abc");
+        try {
+            BacktrackScanner sc = new BacktrackScanner(new StringReader("xyzw abccdexy"));
+            new Matcher(r).search(sc);
+            assertEquals("abc", sc.getToken());
+            sc.accept();
+            assertEquals('c', sc.next());
+        } catch (Matcher.FailedMatch|EOF e) {
+            fail();
+        }
+    }
+    @Test void test21() {
+        RegExp r = concat(star(string("ab")), string("c"));
+        try {
+            BacktrackScanner sc = new BacktrackScanner(new StringReader("xyzw abababccdexy"));
+            new Matcher(r).search(sc);
+            assertEquals("abababc", sc.getToken());
+            sc.accept();
+            assertEquals('c', sc.next());
+        } catch (Matcher.FailedMatch|EOF e) {
+            fail();
+        }
+    }
+    @Test void test22() {
+        RegExp r = alt(concat(star(string("a")), string("b")), string("a"), string("!"));
+        try {
+            String input = "aaaaaaaa!";
+            BacktrackScanner sc = new BacktrackScanner(new StringReader(input));
+            Matcher m = new Matcher(r);
+            for (int i = 0; i < input.length() - 1; i++) {
+                m.search(sc);
+//                println("Token: " + sc.getToken());
+                assertEquals("a", sc.getToken());
+                assertEquals((i < input.length()-2) ? 'a' : '!', sc.peek());
+                sc.accept();
+            }
+            m.search(sc);
+            assertEquals("!", sc.getToken());
+        } catch (Matcher.FailedMatch e) {
+            fail();
+        }
     }
 }

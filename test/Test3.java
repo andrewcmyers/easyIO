@@ -11,7 +11,7 @@ public class Test3 {
         System.out.println("Reading chars: ");
         try {
             while (s.hasNext()) {
-                System.out.printf("Line %d, column %d: ", s.lineNo(), s.column());
+                System.out.printf("Line %d, column %d (position %d): ", s.lineNo(), s.column(), s.inputPosition());
                 char c = s.next();
                 System.out.printf("0x%x: %c\n", (int)c, Character.isWhitespace(c) ? ' ' : c);
             }
@@ -22,7 +22,7 @@ public class Test3 {
         System.out.println("Reading code points: ");
         try {
             while (s.hasNext()) {
-                System.out.printf("Line %d, column %d: ", s.lineNo(), s.column());
+                System.out.printf("Line %d, column %d (position %d): ", s.lineNo(), s.column(), s.inputPosition());
                 int c = s.nextCodePoint();
                 char[] chars = Character.toChars(c);
                 String str = new String(chars);

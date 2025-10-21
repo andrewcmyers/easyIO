@@ -27,7 +27,7 @@ public class StringRE extends RegExp {
 
     @Override
     public RegExp derivative(int codepoint) {
-        if (chars.isEmpty()) return VoidRE.create();
+        if (chars.isEmpty() || chars.charAt(0) != codepoint) return VoidRE.create();
         return super.derivative(codepoint);
     }
 

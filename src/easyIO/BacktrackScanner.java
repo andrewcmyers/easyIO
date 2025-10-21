@@ -2,7 +2,6 @@ package easyIO;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
@@ -111,15 +110,15 @@ public class BacktrackScanner extends java.io.Reader {
     public static class Location {
         public Location(Source i, int line, int column, int ch) {
             input = i;
-            lineno = line;
-            charpos = column;
+            lineNumber = line;
+            this.column = column;
             character = ch;
             assert ch >= 0;
         }
         Source input;
-        int lineno;
-        int charpos;
-        int character;
+        int lineNumber;
+        int column;
+        int character; // Unicode code point
         public String toString() {
             String cs = String.valueOf((char) character);
             if (character < ' ') {
@@ -134,13 +133,13 @@ public class BacktrackScanner extends java.io.Reader {
                 }
             }
             return '"' + input.name() + "\", line " +
-                    lineno + ", char " + charpos + " (" + cs + ")";
+                    lineNumber + ", char " + column + " (" + cs + ")";
         }
         public int lineNo() {
-            return lineno;
+            return lineNumber;
         }
         public int column() {
-            return charpos;
+            return column;
         }
     }
 
@@ -151,6 +150,7 @@ public class BacktrackScanner extends java.io.Reader {
     private Location[] buffer;
     private int pos; // current input position (always in the deepest region)
     private int end; // marks end of characters actually read in buffer (last is at end-1)
+    private int bufferOffset; // offset in characters to the beginning of the buffer
 
     /** if non-zero, pendingChar is the low surrogate for a character whose
      *  high surrogate has already been returned by read()
@@ -211,6 +211,7 @@ public class BacktrackScanner extends java.io.Reader {
 
     public BacktrackScanner() {
         buffer = new Location[INITIAL_SIZE];
+        pos = 0;
         end = 0;
         marks = new int[INITIAL_SIZE];
         nmarks = 0;
@@ -246,6 +247,13 @@ public class BacktrackScanner extends java.io.Reader {
         } catch (EOF e) {
             return inputs.getFirst().column();
         }
+    }
+
+    /**
+     * Current character position of the scanner in the combined input stream.
+     */
+    public int inputPosition() {
+        return pos + bufferOffset;
     }
 
     /** The current source of input. Throw EOF if there is no
@@ -377,6 +385,7 @@ public class BacktrackScanner extends java.io.Reader {
         }
         pos -= start;
         end = newlen;
+        bufferOffset += start;
     }
 
     /** Location in input source of the current position. */
