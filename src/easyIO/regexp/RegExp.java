@@ -5,6 +5,9 @@ import java.util.Map;
 
 import static easyIO.StdIO.println;
 
+/** A regular expression, with support for matching and searching an input sourc, based on
+ * Brzozowski derivatives.
+ */
 public abstract class RegExp {
     /** A memoization map from next characters (Unicode codepoints)
      * to Brzozowski derivatives: regular expressions recognizing
@@ -26,7 +29,7 @@ public abstract class RegExp {
     /** Regular expressions are interned so that there is only one instance of
      * an equal regular expression. This is the canonical instance representing
      * that regular expression. The factory methods for regular expressions all
-     * produces canonical instances.
+     * return canonical instances.
      */
     static RegExp canonicalize(RegExp r) {
         RegExp result = regExps.get(r);
@@ -36,6 +39,7 @@ public abstract class RegExp {
         }
         return result;
     }
+
     /** The (canonical) Brzozowski derivative of this regular expression. */
     public RegExp derivative(int codepoint) {
         RegExp derivative = derivatives.get(codepoint);
@@ -49,6 +53,9 @@ public abstract class RegExp {
         return derivative;
     }
 
+    /**
+     * Scan a single codepoint and return the updated matcher state.
+     */
     public Matcher.State scan(int codepoint, Matcher matcher) {
         var derivative = derivative(codepoint);
         return new Matcher.State(derivative);
@@ -68,13 +75,19 @@ public abstract class RegExp {
         return b.toString();
     }
 
-    /** Precedence: 0 = top level
-     *  1 = |
-     *  2 = concat
-     *  3 = star
+    /** Append a string representation of the regular expression to
+     * the builder b. The precedence of the surrounding context is provided
+     * so that necessary parentheses can be added.
+     * Precedences: 0 = top level
+     *              1 = |
+     *              2 = concat
+     *              3 = star
      */
     public abstract void appendString(StringBuilder b, int precedence);
 
+    /**
+     * The Object.toString() output, for use in debugging.
+     */
     String address() {
         return super.toString();
     }
