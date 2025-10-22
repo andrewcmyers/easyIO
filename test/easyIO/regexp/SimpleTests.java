@@ -285,7 +285,7 @@ public class SimpleTests {
     }
     @Test void test24() throws Parser.SyntaxError {
         RegExp r = parse("ab|c");
-        assertEquals("/ab|c/", r.toString());
+        assertEquals("/c|ab/", r.toString());
     }
     @Test void test25() throws Parser.SyntaxError {
         RegExp r = parse("a(ab)*|c");
@@ -303,6 +303,23 @@ public class SimpleTests {
             new Matcher("a(ab)*|c").match("aabab");
             new Matcher("a(ab)*|c").match("a");
             new Matcher("a(ab)*|c").match("c");
+        } catch (Matcher.FailedMatch e) {
+            fail();
+        }
+    }
+    @Test void test28() throws Parser.SyntaxError {
+        RegExp r = parse("ab*");
+        assertEquals("/ab*/", r.toString());
+    }
+    @Test void test29() throws Parser.SyntaxError {
+        RegExp r = parse("a|");
+        assertEquals("/|a/", r.toString());
+    }
+    @Test void test30() throws Parser.SyntaxError {
+        RegExp r = parse("a((ab*))xx|xc");
+        assertEquals("/a((ab*))xx|xc/", r.toString());
+        try {
+            new Matcher(r).match("aabbbxx");
         } catch (Matcher.FailedMatch e) {
             fail();
         }

@@ -29,7 +29,7 @@ public class Concat extends RegExp {
                 .flatMap(Concat::flatten)
                 .filter(r -> !r.equals(empty()))
                 .toList()
-                .toArray(new RegExp[0]);
+                .toArray(RegExps);
         return switch (exprs.length) {
             case 0 -> empty();
             case 1 -> exprs[0];

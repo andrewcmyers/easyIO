@@ -78,10 +78,14 @@ public class Parser {
 
     private static RegExp parseAtom(BacktrackScanner b) throws SyntaxError {
         try {
+            if (!b.hasNext()) return empty();
             switch (b.peek()) {
+                case ')':
+                    return empty();
                 case '(': {
                     b.next();
                     if (b.peek() == '(') {
+                        b.next();
                         RegExp alts = parseAlts(b);
                         expect(b, ')');
                         expect(b, ')');
@@ -104,11 +108,7 @@ public class Parser {
                     return empty(); // XXX finish this case
                 }
                 default: {
-                    StringBuilder sb = new StringBuilder();
-                    while (b.hasNext() && specialChars.indexOf(b.peek()) == -1) {
-                        sb.appendCodePoint(b.next());
-                    }
-                    return string(sb.toString());
+                    return string(Character.toString(b.next()));
                 }
             }
         } catch (EOF e) {

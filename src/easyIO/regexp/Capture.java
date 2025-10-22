@@ -37,4 +37,8 @@ public class Capture extends RegExp {
         pattern.appendString(b, 0);
         b.append("))");
     }
+
+    public int hashCode() {
+        return pattern.hashCode() * 179;
+    }
 }
