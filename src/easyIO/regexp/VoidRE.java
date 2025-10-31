@@ -25,6 +25,12 @@ public class VoidRE extends RegExp {
     }
 
     @Override
+    protected int numberCaptures(int index) {
+        assert false;
+        return index;
+    }
+
+    @Override
     public void appendString(StringBuilder b, int precedence) {
         b.append("[]");
     }

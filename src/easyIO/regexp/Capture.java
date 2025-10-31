@@ -1,9 +1,15 @@
 package easyIO.regexp;
 
 public class Capture extends RegExp {
-    RegExp pattern;
+    final RegExp pattern;
+    int captureIndex; // -1 or the index of this capture inside its RE
     private Capture(RegExp e) {
         pattern = e;
+        captureIndex = -1;
+    }
+    private Capture(RegExp e, int captureIndex) {
+        pattern = e;
+        this.captureIndex = captureIndex;
     }
 
     public static RegExp capture(RegExp e) {
@@ -20,22 +26,29 @@ public class Capture extends RegExp {
     }
 
     @Override
-    protected RegExp computeDerivative(int codepoint) {
-        RegExp next = pattern.derivative(codepoint);
-        if (next.isVoid()) return VoidRE.create();
-        return new Capture(next);
+    public DerivativeResult computeDerivative(int codepoint) {
+        var nextExpr = pattern.derivative(codepoint);
+        // discarding nextExpr.transformer here...
+        var nextRE = new Capture(nextExpr.derivative(), captureIndex);
+        MatchTransformer transformer = (Match match) -> {
+            return new CaptureMatch(captureIndex);
+        };
+        return new DerivativeResult(nextRE, transformer);
     }
 
-    public Matcher.State scan(int codepoint) {
-        var derivative = derivative(codepoint);
-        return new Matcher.State(derivative);
+    @Override
+    protected int numberCaptures(int index) {
+        if (index == -1)
+            throw new IllegalArgumentException("a capture cannot occur at this position inside a regular expression");
+        captureIndex = index;
+        return index+1;
     }
 
     @Override
     public void appendString(StringBuilder b, int precedence) {
-        b.append("((");
-        pattern.appendString(b, 0);
-        b.append("))");
+        b.append("⸨");
+          pattern.appendString(b, 0);
+        b.append("⸩");
     }
 
     public int hashCode() {

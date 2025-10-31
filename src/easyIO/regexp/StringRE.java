@@ -1,7 +1,5 @@
 package easyIO.regexp;
 
-import static easyIO.StdIO.println;
-
 /**
  * A string of characters, possibly empty
  */
@@ -26,21 +24,23 @@ public class StringRE extends RegExp {
     }
 
     @Override
-    public RegExp derivative(int codepoint) {
-        if (chars.isEmpty() || chars.charAt(0) != codepoint) return VoidRE.create();
+    public DerivativeResult derivative(int codepoint) {
+        if (chars.isEmpty() || chars.charAt(0) != codepoint) {
+            return new DerivativeResult(VoidRE.create(), sameMatch);
+        }
         return super.derivative(codepoint);
     }
 
-    protected RegExp computeDerivative(int codepoint) {
+    protected DerivativeResult computeDerivative(int codepoint) {
         // Dx 1 = 0
         // Dx x = 1
         // Dx y = 0  (y ≠ x)
         // so Dx xa = a
         //    Dx ya = 0
         if (!chars.isEmpty() && chars.charAt(0) == codepoint) {
-            return string(chars.substring(1));
+            return new DerivativeResult(string(chars.substring(1)), sameMatch);
         }
-        return VoidRE.create();
+        return new DerivativeResult(VoidRE.create(), sameMatch);
     }
 
     @Override
@@ -83,27 +83,27 @@ public class StringRE extends RegExp {
         return b.toString();
     }
 
-    public class StringMatch implements Match {
-        StringBuilder builder = new StringBuilder();
-        Match parent;
-
-        StringMatch(Match parent) {
-            this.parent = parent;
-        }
-
-        @Override
-        public boolean success() {
-            return true;
-        }
-
-        @Override
-        public Match accept(int codepoint) {
-            builder.appendCodePoint(codepoint);
-            if (nullable()) {
-                return parent;
-            } else {
-                return this;
-            }
-        }
-    }
+//    public class StringMatch extends Match {
+//        StringBuilder builder = new StringBuilder();
+//        Match parent;
+//
+//        StringMatch(Match parent) {
+//            this.parent = parent;
+//        }
+//
+//        @Override
+//        public boolean success() {
+//            return true;
+//        }
+//
+//        @Override
+//        public Match accept(int codepoint) {
+//            builder.appendCodePoint(codepoint);
+//            if (nullable()) {
+//                return parent;
+//            } else {
+//                return this;
+//            }
+//        }
+//    }
 }

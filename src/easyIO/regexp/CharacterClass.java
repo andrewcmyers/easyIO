@@ -22,18 +22,13 @@ public class CharacterClass extends RegExp {
     }
 
     @Override
-    public RegExp derivative(int codepoint) {
+    public DerivativeResult computeDerivative(int codepoint) {
         if ((codepoint >= start && codepoint <= end) != negated
             || (start > end) == negated) {
-            return empty();
+            return new DerivativeResult(empty(), sameMatch);
         } else {
-            return VoidRE.create();
+            return new DerivativeResult(VoidRE.create(), sameMatch);
         }
-    }
-
-    @Override
-    protected RegExp computeDerivative(int codepoint) {
-        return derivative(codepoint);
     }
 
     @Override

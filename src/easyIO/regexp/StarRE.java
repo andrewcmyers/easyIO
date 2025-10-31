@@ -30,9 +30,16 @@ public class StarRE extends RegExp {
     }
 
     @Override
-    protected RegExp computeDerivative(int codepoint) {
+    protected DerivativeResult computeDerivative(int codepoint) {
         // Dx a* = (Dx a) a
-        return concat(expr.derivative(codepoint), this);
+        return new DerivativeResult(concat(expr.derivative(codepoint).derivative(), this),
+                sameMatch);
+    }
+
+    @Override
+    protected int numberCaptures(int index) {
+        expr.numberCaptures(-1);
+        return index;
     }
 
     @Override

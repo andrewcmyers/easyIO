@@ -10,14 +10,24 @@ import static easyIO.StdIO.print;
 import static easyIO.StdIO.println;
 
 public class Matcher {
+    /// A state of the matcher as it processes input. Captured input is held in `match`.
+    public record State (RegExp re, Match match) {
+        State(RegExp re) {
+            this(re, new EmptyMatch());
+        }
+    }
+
+    /// A potentially invalid state that the matcher went through at input position `inputPosition` while searching.
+    private record IndexedState(int inputPosition, RegExp r) {}
+
     private static final boolean DEBUG = false;
-    private final ArrayList<String> captures = new ArrayList<>();
     private State state;
     private RegExp expr;
-    record IndexedState(int index, RegExp r) {}
+
     private Set<IndexedState> hopelessStates = null;
     public Matcher(RegExp r) {
         expr = r;
+        expr.numberCaptures(0);
         state = new State(r);
     }
     /** Create a matcher based on a regular expression to be parsed.
@@ -31,14 +41,10 @@ public class Matcher {
         state = new State(expr);
     }
 
-    public record State (
-        RegExp re
-    ){}
-
     public static class FailedMatch extends Exception {
         static FailedMatch exception = new FailedMatch();
     }
-    public List<String> match(String s) throws FailedMatch {
+    public Match match(String s) throws FailedMatch {
         return match(new BacktrackScanner(new BacktrackScanner.ReaderSource(new StringReader(s), s)));
     }
     private void reportState(int pos, State state, int ch) {
@@ -47,7 +53,7 @@ public class Matcher {
         else println();
     }
     /** Whether the regular expression matches the entire input. */
-    public List<String> match(BacktrackScanner s) throws FailedMatch {
+    public Match match(BacktrackScanner s) throws FailedMatch {
         while (s.hasNext()) {
             int ch;
             try {
@@ -56,14 +62,14 @@ public class Matcher {
                 break;
             }
             if (DEBUG) reportState(s.inputPosition(), state, ch);
-            state = state.re.scan(ch, this);
+            state = state.re.scan(ch, state);
             if (state.re.isVoid()) {
                 throw FailedMatch.exception;
             }
         }
         if (DEBUG) reportState(s.inputPosition(), state, 0);
         if (state.re.nullable())
-            return captures;
+            return state.re.finish(state.match);
         else
             throw FailedMatch.exception;
     }
@@ -94,7 +100,7 @@ public class Matcher {
                 int pos = s.inputPosition();
                 int ch = s.nextCodePoint();
                 if (DEBUG) reportState(pos, state, ch);
-                state = re.scan(ch, this);
+                state = re.scan(ch, state);
 
                 seenStates.put(pos, new IndexedState(pos, state.re));
             } catch (EOF exc) {
@@ -118,7 +124,7 @@ public class Matcher {
                     // roll back to previous end mark
                     s.abort();
                     seenStates.clear();
-                    return captures;
+                    return List.of(); // XXX needs something here.
                 }
                 s.abort(); // clear old start mark
                 s.advance();
@@ -136,7 +142,7 @@ public class Matcher {
             // roll back to previous end mark
             s.abort();
             seenStates.clear();
-            return captures;
+            return List.of();
         } else {
             throw FailedMatch.exception;
         }

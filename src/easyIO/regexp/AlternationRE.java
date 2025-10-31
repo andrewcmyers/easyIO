@@ -20,6 +20,9 @@ public class AlternationRE extends RegExp {
         exprs = rs;
         assert !Arrays.stream(exprs).anyMatch(RegExp::isVoid);
     }
+    Stream<RegExp> exprs() {
+        return Arrays.stream(exprs);
+    }
     @Override public boolean isVoid() {
         if (computedVoid) return isVoid;
         isVoid = Arrays.stream(exprs).allMatch(RegExp::isVoid);
@@ -30,15 +33,29 @@ public class AlternationRE extends RegExp {
         return Arrays.stream(exprs).anyMatch(RegExp::nullable);
     }
 
+    @Override
+    protected DerivativeResult computeDerivative(int codepoint) {
+        // Dx (a + b) = (Dx a) + (Dx b)
+        DerivativeResult[] derivatives = Arrays.stream(exprs)
+                .map(r -> r.derivative(codepoint)).toList().toArray(DerivativeResults);
+        RegExp[] regexps = Arrays.stream(derivatives)
+                .map(DerivativeResult::derivative).toList().toArray(RegExps);
+        MatchTransformer[] transformers = Arrays.stream(derivatives)
+                .map(DerivativeResult::transformer).toList().toArray(Transformers);
+        MatchTransformer transformer = (Match m) -> {
+          AltMatch am = (AltMatch) m;
+          assert (am.matches.length() == transformers.length());
+
+        };
+        return new DerivativeResult(alt(regexps), sameMatch);
+    }
 
     @Override
-    protected RegExp computeDerivative(int codepoint) {
-        // Dx (a + b) = (Dx a) + (Dx b)
-        RegExp[] derivatives = Arrays.stream(exprs)
-                .map(r -> r.derivative(codepoint))
-                .toList()
-                .toArray(RegExps);
-        return alt(derivatives);
+    protected int numberCaptures(int index) {
+        for (RegExp re : exprs) {
+            index = re.numberCaptures(index);
+        }
+        return index;
     }
 
     public static RegExp alt(RegExp ...exprs) {
@@ -110,4 +127,9 @@ public class AlternationRE extends RegExp {
         }
         return result;
     }
+
+//    @Override
+//    protected Match updateMatch(Match match, int codepoint) {
+//        return new AltMatch(this);
+//    }
 }

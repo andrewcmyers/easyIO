@@ -209,9 +209,9 @@ public class SimpleTests {
     }
     @Test void test16() {
         RegExp r = star(alt(string("a"), string("aa")));
-        RegExp s = r.derivative('a');
-        RegExp t = s.derivative('a');
-        RegExp u = t.derivative('a');
+        RegExp s = r.derivative('a', match);
+        RegExp t = s.derivative('a', match);
+        RegExp u = t.derivative('a', match);
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -219,9 +219,9 @@ public class SimpleTests {
     @Test void test17() {
         RegExp r = star(alt(string("a"), string("aa")));
         r = concat(r, range('a', 'a'), r);
-        RegExp s = r.derivative('a');
-        RegExp t = s.derivative('a');
-        RegExp u = t.derivative('a');
+        RegExp s = r.derivative('a', match);
+        RegExp t = s.derivative('a', match);
+        RegExp u = t.derivative('a', match);
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -229,9 +229,9 @@ public class SimpleTests {
     @Test void test18() {
         RegExp r = star(alt(string("a"), string("aa")));
         r = star(concat(r, string("a"), r));
-        RegExp s = r.derivative('a');
-        RegExp t = s.derivative('a');
-        RegExp u = t.derivative('a');
+        RegExp s = r.derivative('a', match);
+        RegExp t = s.derivative('a', match);
+        RegExp u = t.derivative('a', match);
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -317,7 +317,7 @@ public class SimpleTests {
     }
     @Test void test30() throws Parser.SyntaxError {
         RegExp r = parse("a((ab*))xx|xc");
-        assertEquals("/a((ab*))xx|xc/", r.toString());
+        assertEquals("/a⸨ab*⸩xx|xc/", r.toString());
         try {
             new Matcher(r).match("aabbbxx");
         } catch (Matcher.FailedMatch e) {

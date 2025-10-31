@@ -1,12 +1,10 @@
 package easyIO.regexp;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static easyIO.regexp.AlternationRE.alt;
 import static easyIO.regexp.StringRE.empty;
-import static easyIO.regexp.StringRE.string;
 
 /** A regular expression of the form r1r2r3...
  */
@@ -50,13 +48,14 @@ public class Concat extends RegExp {
     }
 
     @Override
-    protected RegExp computeDerivative(int codepoint) {
+    protected DerivativeResult computeDerivative(int codepoint) {
         // Dx (ab) = (Dx a) b + (n a) (Dx b)
         assert exprs.length > 1;
         var result = VoidRE.create();
         for (int i = 0; i < exprs.length; i++) {
             RegExp[] args = new RegExp[exprs.length - i];
-            args[0] = exprs[i].derivative(codepoint);
+            DerivativeResult dr = exprs[i].derivative(codepoint);
+            args[0] = dr.derivative();
             for (int j = 1; j < args.length; j++) {
                 args[j] = exprs[i + j];
             }
@@ -66,7 +65,15 @@ public class Concat extends RegExp {
                 result = alt(result, concat(args));
             if (!exprs[i].nullable()) break;
         }
-        return result;
+        return new DerivativeResult(result, sameMatch);
+    }
+
+    @Override
+    protected int numberCaptures(int index) {
+        for (RegExp re : exprs) {
+            index = re.numberCaptures(index);
+        }
+        return index;
     }
 
     @Override
