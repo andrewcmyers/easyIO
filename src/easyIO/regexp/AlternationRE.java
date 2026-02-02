@@ -35,19 +35,19 @@ public class AlternationRE extends RegExp {
 
     @Override
     protected DerivativeResult computeDerivative(int codepoint) {
-        // Dx (a + b) = (Dx a) + (Dx b)
+        // Dx (a + b + ...) = (Dx a) + (Dx b) + ...
         DerivativeResult[] derivatives = Arrays.stream(exprs)
                 .map(r -> r.derivative(codepoint)).toList().toArray(DerivativeResults);
         RegExp[] regexps = Arrays.stream(derivatives)
                 .map(DerivativeResult::derivative).toList().toArray(RegExps);
         MatchTransformer[] transformers = Arrays.stream(derivatives)
-                .map(DerivativeResult::transformer).toList().toArray(Transformers);
-        MatchTransformer transformer = (Match m) -> {
-          AltMatch am = (AltMatch) m;
-          assert (am.matches.length() == transformers.length());
-
+                .map((DerivativeResult d) -> d::transform).toArray(Transformers);
+        return new DerivativeResult(alt(regexps)) {
+            @Override
+            public Match transform(Match input) {
+                
+            }
         };
-        return new DerivativeResult(alt(regexps), sameMatch);
     }
 
     @Override

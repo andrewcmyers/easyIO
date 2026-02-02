@@ -46,8 +46,25 @@ public abstract class RegExp {
     public interface MatchTransformer {
         Match transform(Match input);
     }
-    MatchTransformer sameMatch = m -> m;
-    public record DerivativeResult(RegExp derivative, MatchTransformer transformer) {}
+    public static abstract class DerivativeResult {
+        RegExp derivative;
+
+        DerivativeResult(RegExp derivative) {
+            this.derivative = derivative;
+        }
+        public RegExp derivative() { return derivative; }
+        public abstract Match transform(Match input, int codepoint);
+    }
+
+    public static class UnchangedMatch extends DerivativeResult {
+        UnchangedMatch(RegExp derivative) {
+            super(derivative);
+        }
+
+        public Match transform(Match input, int codepoint) {
+            return input;
+        }
+    }
 
     /** The (canonical) Brzozowski derivative of this regular expression. */
     public DerivativeResult derivative(int codepoint) {
@@ -60,15 +77,6 @@ public abstract class RegExp {
             derivatives.put(codepoint, result);
         }
         return result;
-    }
-
-    /**
-     * Scan a single codepoint and return the updated matcher state.
-     */
-    public State scan(int codepoint, State state) {
-        var derivativeResult = derivative(codepoint);
-        var match = derivativeResult.transformer().transform(state.match()).accept(codepoint);
-        return new State(derivativeResult.derivative, match);
     }
 
 //    protected Match updateMatch(Match match, int codepoint) {

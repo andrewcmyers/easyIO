@@ -1,12 +1,16 @@
 package easyIO.regexp;
 
 public class EmptyMatch implements Match {
-    @Override
-    public Match accept(int codepoint) {
-        return this; // discard
+    RegExp expression;
+
+    public EmptyMatch(RegExp expr) {
+        expression = expr;
     }
 
-    public String toString() {
-        return "\"\"";
+    @Override
+    public Match scan(int codepoint) {
+        var derivativeResult = expr.derivative(codepoint);
+        var match = derivativeResult.transform(state.match(), codepoint);
+        return new Matcher.State(derivativeResult.derivative, match);
     }
 }

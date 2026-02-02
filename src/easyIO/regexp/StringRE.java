@@ -6,6 +6,7 @@ package easyIO.regexp;
 public class StringRE extends RegExp {
     private static final RegExp empty = new StringRE("");
     private final String chars;
+    private Object sameMatch;
 
     private StringRE(String s) {
         chars = s;
@@ -23,10 +24,17 @@ public class StringRE extends RegExp {
         return chars.isEmpty();
     }
 
+    static class Unchanged extends DerivativeResult {
+        @Override
+        public Match transform(Match input, int codepoint) {
+            return input;
+        }
+    }
+
     @Override
     public DerivativeResult derivative(int codepoint) {
         if (chars.isEmpty() || chars.charAt(0) != codepoint) {
-            return new DerivativeResult(VoidRE.create(), sameMatch);
+            return new Unchanged(VoidRE.create());
         }
         return super.derivative(codepoint);
     }
