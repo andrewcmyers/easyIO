@@ -12,10 +12,10 @@ public class StarRE extends RegExp {
     /** A canonical regular expression equivalent to r* */
     public static RegExp star(RegExp r) {
         // Kleene star is simplified using these rewrites:
-        //   0* = 0
+        //   0* = 1
         //   1* = 1
         //   r** = r*
-        if (r.isVoid()) return VoidRE.create();
+        if (r.isVoid()) return StringRE.empty();
         if (r instanceof StringRE s && s.nullable()) return s;
         if (r instanceof StarRE s) {
             return s;
