@@ -21,6 +21,9 @@ import static easyIO.regexp.StarRE.star;
 import static easyIO.regexp.StringRE.string;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class SimpleTests {
@@ -320,8 +323,8 @@ public class SimpleTests {
         assertEquals("/|a/", r.toString());
     }
     @Test void test30() throws Parser.SyntaxError {
-        RegExp r = parse("a((ab*))xx|xc");
-        assertEquals("/a⸨ab*⸩xx|xc/", r.toString());
+        RegExp r = parse("a{ab*}xx|xc");
+        assertEquals("/a{ab*}xx|xc/", r.toString());
         try {
             new Matcher(r).match("aabbbxx");
         } catch (Matcher.FailedMatch e) {
@@ -370,12 +373,12 @@ public class SimpleTests {
     // Captures are numbered left to right by the parser
     @Test void captures05() throws Matcher.FailedMatch {
         assertEquals(Set.of("⟨aa⟩1 ⟨⟩2", "⟨a⟩1 ⟨a⟩2", "⟨⟩1 ⟨aa⟩2"),
-                     matches(new Matcher("((a*))((a*))"), "aa"));
+                     matches(new Matcher("{a*}{a*}"), "aa"));
     }
 
     // A capture on a branch not taken is unset
     @Test void captures06() throws Matcher.FailedMatch {
-        List<Match> ms = new Matcher("a((b))a|ab((c))").match("abc");
+        List<Match> ms = new Matcher("a{b}a|ab{c}").match("abc");
         assertEquals(1, ms.size());
         Match m = ms.getFirst();
         assertEquals(null, m.group(1));
@@ -387,12 +390,12 @@ public class SimpleTests {
 
     // Nested captures
     @Test void captures07() throws Matcher.FailedMatch {
-        assertEquals(Set.of("⟨xaby⟩1 ⟨ab⟩2"), matches(new Matcher("((x((ab))y))"), "xaby"));
+        assertEquals(Set.of("⟨xaby⟩1 ⟨ab⟩2"), matches(new Matcher("{x{ab}y}"), "xaby"));
     }
 
     // Captures followed by a nullable suffix and a capture-free alternative
     @Test void captures08() throws Matcher.FailedMatch {
-        assertEquals(Set.of("⟨a⟩1", ""), matches(new Matcher("((a))b*|ab*"), "abb"));
+        assertEquals(Set.of("⟨a⟩1", ""), matches(new Matcher("{a}b*|ab*"), "abb"));
     }
 
     @Test void captures09() {
@@ -400,13 +403,13 @@ public class SimpleTests {
     }
 
     @Test void captures10() {
-        assertThrows(Matcher.FailedMatch.class, () -> new Matcher("((a))((b))").match("ba"));
+        assertThrows(Matcher.FailedMatch.class, () -> new Matcher("{a}{b}").match("ba"));
     }
 
     // Search reports the captures of the occurrence found
     @Test void captures11() throws Matcher.FailedMatch {
         BacktrackScanner sc = new BacktrackScanner(new StringReader("zzxaayzz"));
-        List<Match> ms = new Matcher("x((a*))y").search(sc);
+        List<Match> ms = new Matcher("x{a*}y").search(sc);
         assertEquals("xaay", sc.getToken());
         assertEquals(1, ms.size());
         assertEquals("aa", ms.getFirst().group(1));
@@ -421,7 +424,7 @@ public class SimpleTests {
 
     // Matching lazily from a scanner gives the same matches as matching a string
     @Test void scannerMatch01() throws Matcher.FailedMatch {
-        Matcher m = new Matcher("((a*))((a*))b");
+        Matcher m = new Matcher("{a*}{a*}b");
         BacktrackScanner sc = new BacktrackScanner(new StringReader("aab"));
         Set<String> fromScanner = m.match(sc).stream().map(Match::toString).collect(Collectors.toSet());
         assertEquals(matches(m, "aab"), fromScanner);
@@ -466,5 +469,186 @@ public class SimpleTests {
         assertThrows(Matcher.FailedMatch.class, () -> new Matcher("ab").search(sc));
         assertEquals(depth, sc.depth());
         assertEquals(false, sc.hasNext());
+    }
+
+    @Test void prefix01() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("abbbc"));
+        List<Match> ms = new Matcher("ab*").matchPrefix(sc, true);
+        assertEquals(1, ms.size());
+        assertEquals("abbb", ms.getFirst().group(0));
+        assertEquals('c', sc.peek());
+    }
+
+    // The longest prefix may be empty
+    @Test void prefix02() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("bcd"));
+        List<Match> ms = new Matcher("a*").matchPrefix(sc, true);
+        assertEquals("", ms.getFirst().group(0));
+        assertEquals('b', sc.peek());
+    }
+
+    // On failure the position and marks are unchanged
+    @Test void prefix03() {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("ac"));
+        int depth = sc.depth();
+        assertThrows(Matcher.FailedMatch.class, () -> new Matcher("ab").matchPrefix(sc, true));
+        assertEquals('a', sc.peek());
+        assertEquals(depth, sc.depth());
+    }
+
+    // All the ways the prefix matches are reported
+    @Test void prefix04() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("aax"));
+        Set<String> ms = new Matcher("{a*}{a*}").matchPrefix(sc, true).stream()
+                .map(Match::toString).collect(Collectors.toSet());
+        assertEquals(Set.of("⟨aa⟩1 ⟨⟩2", "⟨a⟩1 ⟨a⟩2", "⟨⟩1 ⟨aa⟩2"), ms);
+        assertEquals('x', sc.peek());
+    }
+
+    // Without captures, a single match with no capture groups is reported
+    @Test void prefix05() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("aax"));
+        List<Match> ms = new Matcher("{a*}{a*}").matchPrefix(sc, false);
+        assertEquals(1, ms.size());
+        assertEquals(0, ms.getFirst().groupCount());
+        assertEquals("aa", ms.getFirst().group(0));
+        assertEquals('x', sc.peek());
+    }
+
+    // Finding the longest prefix reads past it, then rolls back
+    @Test void prefix06() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("aaaax"));
+        int depth = sc.depth();
+        assertEquals("a", new Matcher("a*b|a").matchPrefix(sc, true).getFirst().group(0));
+        assertEquals(1, sc.inputPosition());
+        assertEquals(depth, sc.depth());
+    }
+
+    // An unmatched ')' is a syntax error, rather than ending the pattern early
+    @Test void parse01() {
+        for (String p : List.of("a)", "a))", "ab)c", ")")) {
+            assertThrows(Parser.SyntaxError.class, () -> parse(p), p);
+        }
+    }
+
+    // Unmatched or misplaced metacharacters are syntax errors
+    @Test void parse02() {
+        for (String p : List.of("{a", "a}", "{a)", "(a}", "*a", "a|*", "]", "a\\")) {
+            assertThrows(Parser.SyntaxError.class, () -> parse(p), p);
+        }
+    }
+
+    // Braces capture; nested parentheses only group
+    @Test void parse03() throws Matcher.FailedMatch {
+        assertEquals(Set.of("⟨ab⟩1"), matches(new Matcher("{((a|b)*)}c"), "abc"));
+        assertEquals(Set.of(""), matches(new Matcher("((a|b)*)c"), "abc"));
+    }
+
+    // A backslash makes any character literal, and printing escapes metacharacters
+    @Test void parse04() throws Parser.SyntaxError, Matcher.FailedMatch {
+        RegExp r = parse("\\{a\\*\\}\\\\");
+        assertEquals("/\\{a\\*\\}\\\\/", r.toString());
+        new Matcher(r).match("{a*}\\");
+        assertEquals(Set.of("⟨(x)⟩1"), matches(new Matcher("{\\(x\\)}"), "(x)"));
+    }
+
+    private static boolean matchesAll(String pattern, String input) {
+        try {
+            new Matcher(pattern).match(input);
+            return true;
+        } catch (Matcher.FailedMatch e) {
+            return false;
+        }
+    }
+
+    @Test void class01() {
+        assertTrue(matchesAll("[abc]*", "abccba"));
+        assertFalse(matchesAll("[abc]*", "abd"));
+        assertTrue(matchesAll("[a-z_][a-z0-9_]*", "x_42"));
+        assertFalse(matchesAll("[a-z_][a-z0-9_]*", "4x"));
+        assertTrue(matchesAll("[^0-9]*", "abc"));
+        assertFalse(matchesAll("[^0-9]*", "ab3"));
+        assertTrue(matchesAll("[^]", "λ"));       // any character, including non-ASCII
+        assertFalse(matchesAll("[]", ""));        // matches nothing
+        assertFalse(matchesAll("[]", "a"));
+        assertTrue(matchesAll("[α-ω]*", "λμ"));
+    }
+
+    // '-' is literal at the start or end; other metacharacters can be escaped
+    @Test void class02() {
+        assertTrue(matchesAll("[-a]*", "a-a"));
+        assertTrue(matchesAll("[a-]*", "-a"));
+        assertTrue(matchesAll("[\\]\\-\\\\^]*", "]-\\^"));
+        assertFalse(matchesAll("[\\]\\-]", "a"));
+        assertTrue(matchesAll("[*|(){}]*", "*|(){}")); // other metacharacters are literal in a class
+    }
+
+    @Test void class03() {
+        for (String p : List.of("[a", "[a-", "[z-a]", "[\\", "[^")) {
+            assertThrows(Parser.SyntaxError.class, () -> parse(p), p);
+        }
+    }
+
+    // Classes are canonical: equal sets are equal, and printing round-trips
+    @Test void class04() throws Parser.SyntaxError {
+        assertSame(parse("[a-cb-dx]"), parse("[xa-d]"));
+        assertEquals("/[a-dx]/", parse("[xa-d]").toString());
+        assertEquals("/[^a]/", parse("[^a]").toString());
+        assertEquals("/[^]/", parse("[^]").toString());
+        assertEquals("/a/", parse("[a]").toString()); // a single character is just a string
+        for (String p : List.of("[a-dx]", "[^0-9]", "[\\]\\-\\\\]", "[ab]")) {
+            RegExp r = parse(p);
+            assertSame(r, parse(r.toString().substring(1, r.toString().length() - 1)), p);
+        }
+    }
+
+    @Test void class05() throws Matcher.FailedMatch {
+        assertEquals(Set.of("⟨key⟩1 ⟨v4l⟩2"), matches(new Matcher("{[a-z]*}=[ ]*{[a-z0-9]*}"), "key=  v4l"));
+    }
+
+    // '.' is any character except a line break
+    @Test void dot01() {
+        assertTrue(matchesAll("a.c", "abc"));
+        assertTrue(matchesAll("a.c", "aλc"));
+        assertFalse(matchesAll("a.c", "a\nc"));
+        assertFalse(matchesAll("a.c", "a\rc"));
+        assertTrue(matchesAll("a\\.c", "a.c"));
+        assertFalse(matchesAll("a\\.c", "abc"));
+        assertTrue(matchesAll("[.]", "."));           // literal inside a class
+    }
+
+    // With longest-prefix matching, .* stops at the end of the line
+    @Test void dot02() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("# comment\nx = 1"));
+        assertEquals("# comment", new Matcher("#.*").matchPrefix(sc, false).getFirst().group(0));
+        assertEquals('\n', sc.peek());
+    }
+
+    @Test void escape01() {
+        assertTrue(matchesAll("a\\nb", "a\nb"));
+        assertTrue(matchesAll("\\t\\r", "\t\r"));
+        assertTrue(matchesAll("[\\n\\t ]*", " \t\n "));
+        assertTrue(matchesAll("[^\\n]*", "abc"));
+        assertFalse(matchesAll("[^\\n]*", "a\nb"));
+    }
+
+    // A backslash before a letter or digit other than n, r, t is reserved
+    @Test void escape02() {
+        for (String p : List.of("\\d", "\\w", "\\1", "[\\d]", "a\\x")) {
+            assertThrows(Parser.SyntaxError.class, () -> parse(p), p);
+        }
+    }
+
+    // Printing uses '.' and escape sequences, and round-trips
+    @Test void escape03() throws Parser.SyntaxError {
+        assertEquals("/a.c/", parse("a.c").toString());
+        assertEquals("/a\\.c/", parse("a\\.c").toString());
+        assertEquals("/\\n\\t/", parse("\\n\\t").toString());
+        assertEquals("/[\\t\\n ]/", parse("[ \\n\\t]").toString());
+        for (String p : List.of("a.c", "a\\.c", "\\n\\t", "[ \\n\\t]", "[^\\n]x")) {
+            RegExp r = parse(p);
+            String printed = r.toString();
+            assertSame(r, parse(printed.substring(1, printed.length() - 1)), p);
+        }
     }
 }

@@ -64,7 +64,7 @@ public class BacktrackingTests {
         // The same pattern with a capture around the starred part: on success
         // there is a single match despite the exponentially many parses, and on
         // failure it is still fast.
-        Matcher m = new Matcher("(((a|(a|aa)*b)*))c");
+        Matcher m = new Matcher("{(a|(a|aa)*b)*}c");
         String as = "a".repeat(100_000);
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             List<Match> ms = m.match(as + "c");

@@ -1,9 +1,15 @@
 package easyIO;
 
+import easyIO.regexp.Match;
+import easyIO.regexp.Matcher;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** A {@code BacktrackScanner} extended with convenience methods for
  * parsing common things like integers and identifiers.
@@ -315,4 +321,97 @@ public class Scanner extends BacktrackScanner {
 		}
 	}
 
+	/** Matchers for the patterns passed to next(String) and hasNext(String). */
+	private static final Map<String, Matcher> patterns = new ConcurrentHashMap<>();
+
+	/** The matcher for a pattern, parsed once and cached.
+	 *  @throws IllegalArgumentException if the pattern is not a valid regular expression. */
+	private static Matcher matcher(String pattern) {
+		return patterns.computeIfAbsent(pattern, Matcher::new);
+	}
+
+	/**
+	 * Scan past the longest prefix of the input, starting at the current
+	 * position, that matches the regular expression of {@code m}, and return
+	 * all the ways it matches, with their captures. Capture positions are
+	 * relative to the start of the matched text, which is {@code group(0)} of
+	 * each match. The prefix may be empty if the regular expression matches the
+	 * empty string; then the input position does not change, so a loop that
+	 * calls this method until it fails will not terminate. Whitespace is not
+	 * skipped. Finding the longest prefix may require reading ahead past it.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 */
+	public List<Match> nextMatches(Matcher m) throws UnexpectedInput {
+		try {
+			return m.matchPrefix(this, true);
+		} catch (Matcher.FailedMatch e) {
+			throw uinp;
+		}
+	}
+
+	/**
+	 * Scan past and return the longest prefix of the input, starting at the
+	 * current position, that matches the regular expression of {@code m}. Like
+	 * {@code nextMatches(m)}, but faster because captures are not computed.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 */
+	public String next(Matcher m) throws UnexpectedInput {
+		mark();
+		try {
+			m.matchPrefix(this, false);
+			String r = getToken();
+			accept();
+			return r;
+		} catch (Matcher.FailedMatch e) {
+			abort();
+			throw uinp;
+		}
+	}
+
+	/**
+	 * Scan past and return the longest prefix of the input, starting at the
+	 * current position, that matches the regular expression {@code pattern},
+	 * written in the syntax of {@code easyIO.regexp.Parser}. The pattern is
+	 * parsed once and cached.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 * @throws IllegalArgumentException if the pattern is not a valid regular
+	 *             expression.
+	 */
+	public String next(String pattern) throws UnexpectedInput {
+		return next(matcher(pattern));
+	}
+
+	/**
+	 * Whether {@code next(m)} would succeed: that is, whether some prefix of the
+	 * input, possibly empty, matches the regular expression of {@code m}. The
+	 * input position is not changed.
+	 */
+	public boolean hasNext(Matcher m) {
+		mark();
+		try {
+			m.matchPrefix(this, false);
+			return true;
+		} catch (Matcher.FailedMatch e) {
+			return false;
+		} finally {
+			abort();
+		}
+	}
+
+	/**
+	 * Whether {@code next(pattern)} would succeed. The input position is not
+	 * changed.
+	 *
+	 * @throws IllegalArgumentException if the pattern is not a valid regular
+	 *             expression.
+	 */
+	public boolean hasNext(String pattern) {
+		return hasNext(matcher(pattern));
+	}
 }

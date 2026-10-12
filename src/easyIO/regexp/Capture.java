@@ -78,9 +78,9 @@ public class Capture extends RegExp {
 
     @Override
     public void appendString(StringBuilder b, int precedence) {
-        b.append("⸨");
+        b.append("{");
         pattern.appendString(b, 0);
-        b.append("⸩");
+        b.append("}");
     }
 
     @Override

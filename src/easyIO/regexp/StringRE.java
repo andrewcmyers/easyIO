@@ -75,13 +75,27 @@ public class StringRE extends RegExp {
                 case '\\':
                 case '[':
                 case ']':
+                case '{':
+                case '}':
+                case '.':
                     b.append("\\");
                     b.append((char) i);
                     break;
                 default:
-                    b.appendCodePoint(i);
+                    appendEscaped(b, i);
             }
         });
         return b.toString();
+    }
+
+    /** Append a character, written as an escape sequence if it is a newline,
+     *  carriage return, or tab. */
+    static void appendEscaped(StringBuilder b, int c) {
+        switch (c) {
+            case '\n' -> b.append("\\n");
+            case '\r' -> b.append("\\r");
+            case '\t' -> b.append("\\t");
+            default -> b.appendCodePoint(c);
+        }
     }
 }

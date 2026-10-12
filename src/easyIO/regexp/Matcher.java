@@ -73,8 +73,8 @@ public class Matcher {
 
     /** One run of the matcher over some input: the current skeleton state and the
      *  capture state aligned with its positions. The capture state is null when the
-     *  regular expression has no captures, in which case the state is just the
-     *  Brzozowski derivative. */
+     *  regular expression has no captures, or when captures are not wanted, in which
+     *  case the state is just the Brzozowski derivative. */
     private final class Run {
         RegExp state = expr;
         /** For each position of the state, its environments. These arrays are never
@@ -87,8 +87,14 @@ public class Matcher {
         final StringBuilder text;
 
         Run(boolean recordText) {
+            this(recordText, true);
+        }
+
+        /** A run that records the consumed text if recordText, and tracks captures
+         *  if wantCaptures and the regular expression has any. */
+        Run(boolean recordText, boolean wantCaptures) {
             text = recordText ? new StringBuilder() : null;
-            if (expr.hasCaptures()) {
+            if (wantCaptures && expr.hasCaptures()) {
                 Env[] initial = { Env.empty(numCaptures) };
                 captures = new Env[summands(expr).length][];
                 Arrays.fill(captures, initial);
@@ -267,6 +273,21 @@ public class Matcher {
         return result;
     }
 
+    /** The ways the longest prefix of the input, starting at the current position,
+     *  matches the regular expression, possibly the empty prefix. The scanner is left
+     *  just past the prefix. If captures is false, only recognition is done, which
+     *  is faster, and the result is a single Match with no capture groups. Capture
+     *  positions are relative to the start of the prefix.
+     *  Throws FailedMatch if no prefix matches, leaving the input position unchanged.
+     *  Finding the longest prefix may read past it; the scanner is rolled back to the
+     *  end of the prefix.
+     */
+    public List<Match> matchPrefix(BacktrackScanner s, boolean captures) throws FailedMatch {
+        List<Match> found = longestMatch(s, new Run(true, captures), hopelessFor(s), true);
+        if (found == null) throw FailedMatch.exception;
+        return found;
+    }
+
     /** Find the first occurrence of the entire regular expression on the input.
      *  A mark is inserted at the beginning of the occurrence and the scanner position
      *  is left at the end of the longest string that matches the RE, so that the client
@@ -277,27 +298,56 @@ public class Matcher {
      *  left, and FailedMatch is thrown.
      */
     public List<Match> search(BacktrackScanner s) throws FailedMatch {
-        // This implementation avoids backtracking by memoizing hopeless states: a state
-        // reached at a given input position from which no match can end. Without the
-        // memo, maximal munch tokenization has quadratic worst-case complexity, since
-        // each attempt may scan to the end of the input. Hopelessness depends only on
-        // the skeleton state, not on the capture state, and positions are only
-        // meaningful for this scanner.
-        Set<IndexedState> hopeless = hopelessStates.computeIfAbsent(s, k -> new HashSet<>());
-        List<Match> found = null;
-        Run run = new Run(true);
-        // The state after each position since `end` (or since the start, if there is no
-        // match yet), keyed by the input position just after reading a character.
-        Map<Integer, IndexedState> seenStates = new HashMap<>();
-        s.mark(); // start mark
-        int end = s.inputPosition();
+        Set<IndexedState> hopeless = hopelessFor(s);
         while (true) {
-            // if success:  ---------^---------^--------|------
-            //                     start.     end.     current
+            s.mark(); // start mark, left for the client if an occurrence is found here
+            List<Match> found = longestMatch(s, new Run(true), hopeless, false);
+            if (found != null) return found;
+            s.abort(); // erase the start mark; the position is already back at the start
+            if (!s.hasNext()) throw FailedMatch.exception;
+            s.advance();
+            if (!s.hasNext()) throw FailedMatch.exception;
+        }
+    }
+
+    /** The hopeless states learned so far for scanner s. */
+    private Set<IndexedState> hopelessFor(BacktrackScanner s) {
+        return hopelessStates.computeIfAbsent(s, k -> new HashSet<>());
+    }
+
+    /** Run `run` from the current position until no longer match is possible.
+     *  If a match is found (an empty one only if allowEmpty), leave the scanner just
+     *  past the longest one and return its matches; otherwise restore the position
+     *  and return null. Either way the scanner's marks are as they were.
+     *
+     *  This avoids backtracking by memoizing hopeless states: a state reached at a
+     *  given input position from which no match can end. Without the memo, maximal
+     *  munch tokenization has quadratic worst-case complexity, since each attempt
+     *  may scan to the end of the input. Hopelessness depends only on the skeleton
+     *  state, not on the capture state, and positions are only meaningful for this
+     *  scanner, so the hopeless states are kept per scanner.
+     */
+    private List<Match> longestMatch(BacktrackScanner s, Run run, Set<IndexedState> hopeless,
+                                     boolean allowEmpty) {
+        s.mark(); // start mark
+        List<Match> found = null; // the matches of the longest match so far
+        if (allowEmpty) {
+            List<Match> empty = run.results();
+            if (!empty.isEmpty()) {
+                found = empty;
+                s.mark(); // end mark
+            }
+        }
+        // The states seen since the end of the longest match so far (or since the start,
+        // if there is none), all of which are hopeless if no longer match is found.
+        List<IndexedState> seenStates = new ArrayList<>();
+        while (true) {
+            // if found:  ---------^---------^--------|------
+            //                   start      end    current
             //
-            //.if no success: --------^------------------|-----
-            //                      start              current
-            boolean stuck; // whether no longer match can be found from this start
+            //.if not:   --------^------------------|-----
+            //                 start              current
+            boolean stuck; // whether no longer match can be found
             if (!s.hasNext()) {
                 stuck = true;
             } else {
@@ -308,34 +358,27 @@ public class Matcher {
                     throw new Error("cannot happen: hasNext() was true");
                 }
                 run.step(ch);
-                IndexedState here = new IndexedState(s.inputPosition(), run.state);
                 if (run.state.nullable()) {
                     if (found != null) s.accept(); // drop the previous end mark
                     found = run.results();
                     s.mark(); // end mark, so we can roll back to this position
-                    end = s.inputPosition();
                     seenStates.clear();
                     continue;
                 }
-                seenStates.put(here.inputPosition(), here);
+                IndexedState here = new IndexedState(s.inputPosition(), run.state);
+                seenStates.add(here);
                 stuck = run.state.isVoid() || hopeless.contains(here);
                 if (DEBUG && !run.state.isVoid() && stuck) println("Abandoning early because state is hopeless");
             }
             if (!stuck) continue;
-            // None of the states seen since `end` (or since the start) leads to a match.
-            hopeless.addAll(seenStates.values());
-            seenStates.clear();
+            hopeless.addAll(seenStates);
             if (found != null) {
-                s.abort(); // roll back to the end mark
-                return found;
+                s.abort();  // roll back to the end mark
+                s.accept(); // erase the start mark
+            } else {
+                s.abort();  // roll back to the start mark
             }
-            s.abort(); // roll back to the start mark and erase it
-            if (!s.hasNext()) throw FailedMatch.exception;
-            s.advance();
-            if (!s.hasNext()) throw FailedMatch.exception;
-            s.mark(); // new start mark
-            run = new Run(true);
-            end = s.inputPosition();
+            return found;
         }
     }
 }
