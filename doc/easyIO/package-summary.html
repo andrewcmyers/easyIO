@@ -67,9 +67,11 @@ loadScripts(document, 'script');</script>
 <div class="block">This package supports easier and more powerful I/O. The main classes to know about are:
   <ul>
   <li><code>StdIO</code>: easy input from and output to the console.
-  <li><code>Scanner</code>: powerful scanning with arbitrary lookahead and rollback.
-  <li><code>Regex</code>: regular expression support for <code>Scanner</code>.
-  </ul></div>
+  <li><code>Scanner</code>: powerful scanning with arbitrary lookahead and rollback,
+      including scanning input that matches a regular expression.
+  </ul>
+  Regular expressions are provided by the package <code>easyIO.regexp</code>, and
+  backtracking recognizers built from combinators by <code>easyIO.recognizer</code>.</div>
 <dl class="notes">
 <dt>Author:</dt>
 <dd>Andrew Myers</dd>
@@ -85,9 +87,14 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><a href="recognizer/package-summary.html">easyIO.recognizer</a></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">Recognizers: composable matchers for input on a <code>BacktrackScanner</code>, built
+  from combinators and matched by backtracking.</div>
+</div>
 <div class="col-first odd-row-color"><a href="regexp/package-summary.html">easyIO.regexp</a></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-last odd-row-color">
+<div class="block">Regular expressions with captures, matched using Brzozowski derivatives.</div>
+</div>
 </div>
 </div>
 </li>

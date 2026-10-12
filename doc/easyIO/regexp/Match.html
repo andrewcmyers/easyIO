@@ -116,7 +116,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#groupCount()" class="member-name-link">groupCount</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The number of capture groups (not counting group 0).</div>
+<div class="block">The number of capture groups (not counting group 0): the largest capture
+  index in the regular expression.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
@@ -156,7 +157,10 @@ loadScripts(document, 'script');</script>
 <h3>groupCount</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">groupCount</span>()</div>
-<div class="block">The number of capture groups (not counting group 0).</div>
+<div class="block">The number of capture groups (not counting group 0): the largest capture
+  index in the regular expression. It is 0 if the regular expression has no
+  captures, or if this match was made without tracking captures (as by
+  Matcher.matchPrefix(s, false)), in which case only group 0 is available.</div>
 </div>
 </section>
 </li>
@@ -165,7 +169,8 @@ loadScripts(document, 'script');</script>
 <h3>isSet</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isSet</span><wbr><span class="parameters">(int&nbsp;k)</span></div>
-<div class="block">Whether capture k matched something (possibly empty) in this match.</div>
+<div class="block">Whether capture k matched something (possibly empty) in this match.
+  Requires: 0 ≤ k ≤ groupCount().</div>
 </div>
 </section>
 </li>
@@ -174,7 +179,8 @@ loadScripts(document, 'script');</script>
 <h3>start</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">start</span><wbr><span class="parameters">(int&nbsp;k)</span></div>
-<div class="block">The start of capture k, or -1 if it did not participate in this match.</div>
+<div class="block">The start of capture k, or -1 if it did not participate in this match.
+  Requires: 0 ≤ k ≤ groupCount().</div>
 </div>
 </section>
 </li>
@@ -183,7 +189,8 @@ loadScripts(document, 'script');</script>
 <h3>end</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">end</span><wbr><span class="parameters">(int&nbsp;k)</span></div>
-<div class="block">The end of capture k, or -1 if it did not participate in this match.</div>
+<div class="block">The end of capture k, or -1 if it did not participate in this match.
+  Requires: 0 ≤ k ≤ groupCount().</div>
 </div>
 </section>
 </li>
@@ -192,7 +199,8 @@ loadScripts(document, 'script');</script>
 <h3>group</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">group</span><wbr><span class="parameters">(int&nbsp;k)</span></div>
-<div class="block">The text captured by capture k, or null if it did not participate in this match.</div>
+<div class="block">The text captured by capture k, or null if it did not participate in this match.
+  Requires: 0 ≤ k ≤ groupCount().</div>
 </div>
 </section>
 </li>
