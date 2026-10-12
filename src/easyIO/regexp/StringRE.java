@@ -6,13 +6,13 @@ package easyIO.regexp;
 public class StringRE extends RegExp {
     private static final RegExp empty = new StringRE("");
     private final String chars;
-    private Object sameMatch;
 
     private StringRE(String s) {
         chars = s;
     }
 
     public static RegExp string(String s) {
+        if (s.isEmpty()) return empty;
         return canonicalize(new StringRE(s));
     }
 
@@ -24,35 +24,25 @@ public class StringRE extends RegExp {
         return chars.isEmpty();
     }
 
-    static class Unchanged extends DerivativeResult {
-        Unchanged(RegExp derivative) {
-            super(derivative);
-        }
-
-        @Override
-        public Match transform(Match input, int codepoint) {
-            return input;
-        }
-    }
-
     @Override
-    public DerivativeResult derivative(int codepoint) {
-        if (chars.isEmpty() || chars.charAt(0) != codepoint) {
-            return new Unchanged(VoidRE.create());
+    public RegExp derivative(int codepoint) {
+        // Avoid caching derivatives that are void.
+        if (chars.isEmpty() || chars.codePointAt(0) != codepoint) {
+            return VoidRE.create();
         }
         return super.derivative(codepoint);
     }
 
-    protected DerivativeResult computeDerivative(int codepoint) {
+    protected RegExp computeDerivative(int codepoint) {
         // Dx 1 = 0
         // Dx x = 1
         // Dx y = 0  (y ≠ x)
         // so Dx xa = a
         //    Dx ya = 0
-        if (!chars.isEmpty() && chars.charAt(0) == codepoint) {
-            return new DerivativeResult(string(chars.substring(1)), sameMatch);
+        if (!chars.isEmpty() && chars.codePointAt(0) == codepoint) {
+            return string(chars.substring(Character.charCount(codepoint)));
         }
-        return new DerivativeResult(VoidRE.create(), sameMatch);
+        return VoidRE.create();
     }
 
     @Override
@@ -75,7 +65,7 @@ public class StringRE extends RegExp {
     }
 
     public static String quote(String s) {
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         s.codePoints().forEach((int i) -> {
             switch (i) {
                 case '*':
@@ -94,28 +84,4 @@ public class StringRE extends RegExp {
         });
         return b.toString();
     }
-
-//    public class StringMatch extends Match {
-//        StringBuilder builder = new StringBuilder();
-//        Match parent;
-//
-//        StringMatch(Match parent) {
-//            this.parent = parent;
-//        }
-//
-//        @Override
-//        public boolean success() {
-//            return true;
-//        }
-//
-//        @Override
-//        public Match accept(int codepoint) {
-//            builder.appendCodePoint(codepoint);
-//            if (nullable()) {
-//                return parent;
-//            } else {
-//                return this;
-//            }
-//        }
-//    }
 }

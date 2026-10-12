@@ -30,16 +30,22 @@ public class StarRE extends RegExp {
     }
 
     @Override
-    protected DerivativeResult computeDerivative(int codepoint) {
-        // Dx a* = (Dx a) a
-        return new DerivativeResult(concat(expr.derivative(codepoint).derivative(), this),
-                sameMatch);
+    protected RegExp computeDerivative(int codepoint) {
+        // Dx a* = (Dx a) a*
+        return concat(expr.derivative(codepoint), this);
     }
 
     @Override
-    protected int numberCaptures(int index) {
-        expr.numberCaptures(-1);
-        return index;
+    public boolean hasCaptures() {
+        // Always false in a valid RE; reported so that numberCaptures can reject it.
+        return expr.hasCaptures();
+    }
+
+    @Override
+    protected RegExp numberCaptures(int[] next) {
+        if (expr.hasCaptures())
+            throw new IllegalArgumentException("a capture cannot occur inside a Kleene star: " + this);
+        return this;
     }
 
     @Override

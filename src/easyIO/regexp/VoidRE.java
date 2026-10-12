@@ -18,26 +18,10 @@ public class VoidRE extends RegExp {
         return 0;
     }
 
-    static class VoidResult extends DerivativeResult {
-        public VoidResult() {
-            super(instance);
-        }
-        @Override
-        public Match transform(Match input, int codepoint) {
-            return NoMatch.create(); // should never use anyway
-        }
-    }
-
     @Override
-    protected DerivativeResult computeDerivative(int codepoint) {
+    protected RegExp computeDerivative(int codepoint) {
         // Dx 0 = 0
-        return new VoidResult();
-    }
-
-    @Override
-    protected int numberCaptures(int index) {
-        assert false;
-        return index;
+        return instance;
     }
 
     @Override

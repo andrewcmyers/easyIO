@@ -26,34 +26,45 @@ public class Parser {
             pos = b.inputPosition();
         }
     }
+    /** Parse a regular expression. Captures are numbered 1, 2, ... in the order
+     *  their opening parentheses appear. */
     public static RegExp parse(String s) throws SyntaxError {
         return parseAlts(new BacktrackScanner(new StringReader(s)));
     }
 
     public static RegExp parseAlts(BacktrackScanner b) throws SyntaxError {
+        return parseAlts(b, new int[]{1});
+    }
+
+    public static RegExp parseConcat(BacktrackScanner b) throws SyntaxError {
+        return parseConcat(b, new int[]{1});
+    }
+
+    /** nextCapture[0] is the index of the next capture to be parsed. */
+    private static RegExp parseAlts(BacktrackScanner b, int[] nextCapture) throws SyntaxError {
         List<RegExp> concats = new ArrayList<>();
-        concats.add(parseConcat(b));
+        concats.add(parseConcat(b, nextCapture));
         while (b.hasNext()) {
             if (b.peek() == ')') break;
             expect(b, '|');
-            concats.add(parseConcat(b));
+            concats.add(parseConcat(b, nextCapture));
         }
         return alt(concats.toArray(RegExps));
     }
 
-    public static RegExp parseConcat(BacktrackScanner b) throws SyntaxError {
+    private static RegExp parseConcat(BacktrackScanner b, int[] nextCapture) throws SyntaxError {
         List<RegExp> stars = new ArrayList<>();
-        stars.add(parseStar(b));
+        stars.add(parseStar(b, nextCapture));
         while (b.hasNext()) {
             int ch = b.peek();
             if (ch == ')' || ch == '|') break;
-            stars.add(parseStar(b));
+            stars.add(parseStar(b, nextCapture));
         }
         return concat(stars.toArray(RegExps));
     }
 
-    private static RegExp parseStar(BacktrackScanner b) throws SyntaxError {
-        RegExp r = parseAtom(b);
+    private static RegExp parseStar(BacktrackScanner b, int[] nextCapture) throws SyntaxError {
+        RegExp r = parseAtom(b, nextCapture);
         try {
             if (b.peek() == '*') {
                 r = star(r);
@@ -76,7 +87,7 @@ public class Parser {
 
     private static final String specialChars = "*|()[]";
 
-    private static RegExp parseAtom(BacktrackScanner b) throws SyntaxError {
+    private static RegExp parseAtom(BacktrackScanner b, int[] nextCapture) throws SyntaxError {
         try {
             if (!b.hasNext()) return empty();
             switch (b.peek()) {
@@ -86,12 +97,13 @@ public class Parser {
                     b.next();
                     if (b.peek() == '(') {
                         b.next();
-                        RegExp alts = parseAlts(b);
+                        int k = nextCapture[0]++;
+                        RegExp alts = parseAlts(b, nextCapture);
                         expect(b, ')');
                         expect(b, ')');
-                        return capture(alts);
+                        return capture(alts, k);
                     } else {
-                        RegExp alts = parseAlts(b);
+                        RegExp alts = parseAlts(b, nextCapture);
                         expect(b, ')');
                         return alts;
                     }

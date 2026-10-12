@@ -1,6 +1,8 @@
 package easyIO.regexp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static easyIO.regexp.AlternationRE.alt;
@@ -10,16 +12,17 @@ import static easyIO.regexp.StringRE.empty;
  */
 public class Concat extends RegExp {
     private final RegExp[] exprs;
+    private final boolean hasCaptures;
 
     private Concat(RegExp... exprs) {
         this.exprs = exprs.clone();
+        hasCaptures = Arrays.stream(exprs).anyMatch(RegExp::hasCaptures);
     }
 
     /**
      * A canonical RE equivalent to r0r1r2...
      **/
     public static RegExp concat(RegExp... rs) {
-        int n = rs.length;
         for (RegExp r : rs) {
             if (r.isVoid()) return VoidRE.create();
         }
@@ -48,14 +51,23 @@ public class Concat extends RegExp {
     }
 
     @Override
-    protected DerivativeResult computeDerivative(int codepoint) {
+    public boolean hasCaptures() {
+        return hasCaptures;
+    }
+
+    /** The concatenation of all but the first element. */
+    private RegExp rest() {
+        return concat(Arrays.copyOfRange(exprs, 1, exprs.length));
+    }
+
+    @Override
+    protected RegExp computeDerivative(int codepoint) {
         // Dx (ab) = (Dx a) b + (n a) (Dx b)
         assert exprs.length > 1;
         var result = VoidRE.create();
         for (int i = 0; i < exprs.length; i++) {
             RegExp[] args = new RegExp[exprs.length - i];
-            DerivativeResult dr = exprs[i].derivative(codepoint);
-            args[0] = dr.derivative();
+            args[0] = exprs[i].derivative(codepoint);
             for (int j = 1; j < args.length; j++) {
                 args[j] = exprs[i + j];
             }
@@ -65,15 +77,58 @@ public class Concat extends RegExp {
                 result = alt(result, concat(args));
             if (!exprs[i].nullable()) break;
         }
-        return new DerivativeResult(result, sameMatch);
+        return result;
     }
 
     @Override
-    protected int numberCaptures(int index) {
-        for (RegExp re : exprs) {
-            index = re.numberCaptures(index);
+    protected List<DerivTerm> computeTermDerivative(int codepoint) {
+        // d(RS) = (dR)S + (νR)(dS), keeping each summand separate so that
+        // sums containing holes are distributed over S.
+        RegExp head = exprs[0], rest = rest();
+        List<DerivTerm> result = new ArrayList<>();
+        for (DerivTerm d : head.termDerivative(codepoint)) {
+            addTerm(result, concat(d.term(), rest), d.ops());
         }
-        return index;
+        List<Ops> headNull = head.nullOps();
+        if (!headNull.isEmpty()) {
+            for (DerivTerm d : rest.termDerivative(codepoint)) {
+                for (Ops n : headNull) {
+                    addTerm(result, d.term(), n.then(d.ops()));
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    protected List<Ops> computeNullOps() {
+        // ν(RS) = (νR)(νS)
+        List<Ops> result = List.of(Ops.NONE);
+        for (RegExp r : exprs) {
+            List<Ops> n = r.nullOps();
+            List<Ops> next = new ArrayList<>();
+            for (Ops a : result) {
+                for (Ops b : n) next.add(a.then(b));
+            }
+            result = distinct(next);
+            if (result.isEmpty()) break;
+        }
+        return result;
+    }
+
+    @Override
+    protected RegExp numberCaptures(int[] next) {
+        if (!hasCaptures) return this;
+        RegExp[] numbered = new RegExp[exprs.length];
+        for (int i = 0; i < exprs.length; i++) {
+            numbered[i] = exprs[i].numberCaptures(next);
+        }
+        return concat(numbered);
+    }
+
+    @Override
+    protected int maxCaptureIndex() {
+        return Arrays.stream(exprs).mapToInt(RegExp::maxCaptureIndex).max().orElse(0);
     }
 
     @Override
@@ -88,6 +143,7 @@ public class Concat extends RegExp {
     @Override
     public boolean equals(Object o) {
         if (o instanceof Concat r) {
+            if (exprs.length != r.exprs.length) return false;
             for (int i = 0; i < exprs.length; i++) {
                 if (exprs[i] != r.exprs[i]) return false;
             }

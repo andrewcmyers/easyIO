@@ -5,6 +5,9 @@ import easyIO.EOF;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static easyIO.StdIO.println;
 import static easyIO.StdIO.readln;
@@ -17,6 +20,7 @@ import static easyIO.regexp.Parser.parse;
 import static easyIO.regexp.StarRE.star;
 import static easyIO.regexp.StringRE.string;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class SimpleTests {
@@ -209,9 +213,9 @@ public class SimpleTests {
     }
     @Test void test16() {
         RegExp r = star(alt(string("a"), string("aa")));
-        RegExp s = r.derivative('a', match);
-        RegExp t = s.derivative('a', match);
-        RegExp u = t.derivative('a', match);
+        RegExp s = r.derivative('a');
+        RegExp t = s.derivative('a');
+        RegExp u = t.derivative('a');
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -219,9 +223,9 @@ public class SimpleTests {
     @Test void test17() {
         RegExp r = star(alt(string("a"), string("aa")));
         r = concat(r, range('a', 'a'), r);
-        RegExp s = r.derivative('a', match);
-        RegExp t = s.derivative('a', match);
-        RegExp u = t.derivative('a', match);
+        RegExp s = r.derivative('a');
+        RegExp t = s.derivative('a');
+        RegExp u = t.derivative('a');
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -229,9 +233,9 @@ public class SimpleTests {
     @Test void test18() {
         RegExp r = star(alt(string("a"), string("aa")));
         r = star(concat(r, string("a"), r));
-        RegExp s = r.derivative('a', match);
-        RegExp t = s.derivative('a', match);
-        RegExp u = t.derivative('a', match);
+        RegExp s = r.derivative('a');
+        RegExp t = s.derivative('a');
+        RegExp u = t.derivative('a');
         assertEquals(t, u);
         assertEquals(t.hashCode(), u.hashCode());
         assert t == u;
@@ -323,5 +327,95 @@ public class SimpleTests {
         } catch (Matcher.FailedMatch e) {
             fail();
         }
+    }
+
+    /** The matches of r against input, as a set of strings like "⟨a⟩1 ⟨b⟩2". */
+    private static Set<String> matches(Matcher m, String input) throws Matcher.FailedMatch {
+        return m.match(input).stream().map(Match::toString).collect(Collectors.toSet());
+    }
+
+    // Example 1 in notes2.txt: (⟦a+a*⟧₁ + ⟦a+a*b⟧₂)b* on ab
+    @Test void captures01() throws Matcher.FailedMatch {
+        RegExp a = string("a"), b = string("b");
+        RegExp r = concat(alt(capture(alt(a, star(a)), 1),
+                              capture(alt(a, concat(star(a), b)), 2)),
+                          star(b));
+        assertEquals(Set.of("⟨a⟩1", "⟨ab⟩2", "⟨a⟩2"), matches(new Matcher(r), "ab"));
+    }
+
+    // Example 2 in notes2.txt: ⟦a*⟧₁⟦a*⟧₂ on aaaa
+    @Test void captures02() throws Matcher.FailedMatch {
+        RegExp a = string("a");
+        RegExp r = concat(capture(star(a), 1), capture(star(a), 2));
+        assertEquals(Set.of("⟨aaaa⟩1 ⟨⟩2", "⟨aaa⟩1 ⟨a⟩2", "⟨aa⟩1 ⟨aa⟩2", "⟨a⟩1 ⟨aaa⟩2", "⟨⟩1 ⟨aaaa⟩2"),
+                     matches(new Matcher(r), "aaaa"));
+    }
+
+    // Example 3 in notes2.txt: ⟦(a+aa)*⟧₁ has exponentially many parses but one match
+    @Test void captures03() throws Matcher.FailedMatch {
+        RegExp r = capture(star(alt(string("a"), string("aa"))));
+        String input = "a".repeat(200);
+        List<Match> ms = new Matcher(r).match(input);
+        assertEquals(1, ms.size());
+        assertEquals(input, ms.getFirst().group(1));
+    }
+
+    // Example 4 in notes2.txt: (⟦a⟧₁ + ⟦a*⟧₂)b on ab
+    @Test void captures04() throws Matcher.FailedMatch {
+        RegExp a = string("a");
+        RegExp r = concat(alt(capture(a, 1), capture(star(a), 2)), string("b"));
+        assertEquals(Set.of("⟨a⟩1", "⟨a⟩2"), matches(new Matcher(r), "ab"));
+    }
+
+    // Captures are numbered left to right by the parser
+    @Test void captures05() throws Matcher.FailedMatch {
+        assertEquals(Set.of("⟨aa⟩1 ⟨⟩2", "⟨a⟩1 ⟨a⟩2", "⟨⟩1 ⟨aa⟩2"),
+                     matches(new Matcher("((a*))((a*))"), "aa"));
+    }
+
+    // A capture on a branch not taken is unset
+    @Test void captures06() throws Matcher.FailedMatch {
+        List<Match> ms = new Matcher("a((b))a|ab((c))").match("abc");
+        assertEquals(1, ms.size());
+        Match m = ms.getFirst();
+        assertEquals(null, m.group(1));
+        assertEquals("c", m.group(2));
+        assertEquals(2, m.start(2));
+        assertEquals(3, m.end(2));
+        assertEquals("abc", m.group(0));
+    }
+
+    // Nested captures
+    @Test void captures07() throws Matcher.FailedMatch {
+        assertEquals(Set.of("⟨xaby⟩1 ⟨ab⟩2"), matches(new Matcher("((x((ab))y))"), "xaby"));
+    }
+
+    // Captures followed by a nullable suffix and a capture-free alternative
+    @Test void captures08() throws Matcher.FailedMatch {
+        assertEquals(Set.of("⟨a⟩1", ""), matches(new Matcher("((a))b*|ab*"), "abb"));
+    }
+
+    @Test void captures09() {
+        assertThrows(IllegalArgumentException.class, () -> new Matcher(star(capture(string("a")))));
+    }
+
+    @Test void captures10() {
+        assertThrows(Matcher.FailedMatch.class, () -> new Matcher("((a))((b))").match("ba"));
+    }
+
+    // Search reports the captures of the occurrence found
+    @Test void captures11() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("zzxaayzz"));
+        List<Match> ms = new Matcher("x((a*))y").search(sc);
+        assertEquals("xaay", sc.getToken());
+        assertEquals(1, ms.size());
+        assertEquals("aa", ms.getFirst().group(1));
+    }
+
+    // Search with several nullable points along the way keeps the last one
+    @Test void search01() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("xabbbc"));
+        new Matcher("ab*").search(sc);
+        assertEquals("abbb", sc.getToken());
     }
 }

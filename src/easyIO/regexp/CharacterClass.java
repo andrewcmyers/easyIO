@@ -22,12 +22,11 @@ public class CharacterClass extends RegExp {
     }
 
     @Override
-    public DerivativeResult computeDerivative(int codepoint) {
-        if ((codepoint >= start && codepoint <= end) != negated
-            || (start > end) == negated) {
-            return new DerivativeResult(empty(), sameMatch);
+    public RegExp computeDerivative(int codepoint) {
+        if ((codepoint >= start && codepoint <= end) != negated) {
+            return empty();
         } else {
-            return new DerivativeResult(VoidRE.create(), sameMatch);
+            return VoidRE.create();
         }
     }
 
