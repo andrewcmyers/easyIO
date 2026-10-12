@@ -5,7 +5,6 @@ import easyIO.EOF;
 import easyIO.regexp.Ops.Env;
 import easyIO.regexp.RegExp.DerivTerm;
 
-import java.io.StringReader;
 import java.util.*;
 
 import static easyIO.StdIO.println;
@@ -71,57 +70,87 @@ public class Matcher {
      *  Brzozowski derivative. */
     private final class Run {
         RegExp state = expr;
-        List<Set<Env>> captures;
-        final StringBuilder text = new StringBuilder();
+        /** For each position of the state, its environments. These arrays are never
+         *  modified once built, so they can be shared between steps. */
+        Env[][] captures;
+        /** The number of chars consumed so far. */
+        int pos = 0;
+        /** The text consumed so far, when it must be recorded because the input
+         *  is not available as a CharSequence; otherwise null. */
+        final StringBuilder text;
 
-        Run() {
+        Run(boolean recordText) {
+            text = recordText ? new StringBuilder() : null;
             if (expr.hasCaptures()) {
-                captures = new ArrayList<>();
-                for (RegExp ignored : summands(expr)) {
-                    captures.add(Set.of(Env.empty(numCaptures)));
-                }
+                Env[] initial = { Env.empty(numCaptures) };
+                captures = new Env[summands(expr).length][];
+                Arrays.fill(captures, initial);
             }
         }
 
         void step(int codepoint) {
-            int pos = text.length();
             if (captures == null) {
                 state = state.derivative(codepoint);
             } else {
                 Transition t = transition(state, codepoint);
-                List<Set<Env>> next = new ArrayList<>(t.sources.length);
+                Env[][] next = new Env[t.sources.length][];
                 for (int j = 0; j < t.sources.length; j++) {
-                    Set<Env> envs = new LinkedHashSet<>();
-                    for (int e = 0; e < t.sources[j].length; e++) {
-                        Ops ops = t.ops[j][e];
-                        for (Env env : captures.get(t.sources[j][e])) {
-                            envs.add(ops.apply(env, pos)); // the union is R+R=R
+                    int[] sources = t.sources[j];
+                    Ops[] ops = t.ops[j];
+                    if (sources.length == 1) {
+                        next[j] = apply(ops[0], captures[sources[0]], pos);
+                    } else {
+                        // Several edges land here: the union is R+R=R.
+                        Set<Env> envs = new LinkedHashSet<>();
+                        for (int e = 0; e < sources.length; e++) {
+                            for (Env env : captures[sources[e]]) envs.add(ops[e].apply(env, pos));
                         }
+                        next[j] = envs.toArray(NO_ENVS);
                     }
-                    next.add(envs);
                 }
                 state = t.target;
                 captures = next;
             }
-            text.appendCodePoint(codepoint);
-            if (DEBUG) println(pos + ". State is now " + state + ", captures " + captures);
+            if (text != null) text.appendCodePoint(codepoint);
+            if (DEBUG) println(pos + ". State is now " + state + ", captures " + Arrays.deepToString(captures));
+            pos += Character.charCount(codepoint);
         }
 
         /** The matches if the input ends here, in no particular order. Empty if the
          *  input seen so far does not match. */
         List<Match> results() {
+            return results(text.toString());
+        }
+
+        /** The matches if the input ends here, where s is the input consumed. */
+        List<Match> results(String s) {
             if (!state.nullable()) return List.of();
-            String s = text.toString();
             if (captures == null) return List.of(new Match(s, Env.empty(0)));
             Ops[][] accept = acceptOps(state);
             Set<Env> envs = new LinkedHashSet<>();
             for (int i = 0; i < accept.length; i++) {
                 for (Ops ops : accept[i]) {
-                    for (Env env : captures.get(i)) envs.add(ops.apply(env, s.length()));
+                    for (Env env : captures[i]) envs.add(ops.apply(env, s.length()));
                 }
             }
             return envs.stream().map(env -> new Match(s, env)).toList();
         }
+    }
+
+    private static final Env[] NO_ENVS = {};
+
+    /** The environments obtained by applying ops at pos to each of envs. Applying ops
+     *  to distinct environments from the same position yields distinct environments,
+     *  because each capture fires at most once on any path: every environment of a
+     *  term containing ⟦R⟧k has k unmapped, and every environment of a term containing
+     *  ⟨R⟧k has k open. So no duplicates need to be removed, and when there are no
+     *  ops the array can be shared. */
+    private static Env[] apply(Ops ops, Env[] envs, int pos) {
+        if (ops == Ops.NONE) return envs;
+        Env[] result = new Env[envs.length];
+        for (int i = 0; i < envs.length; i++) result[i] = ops.apply(envs[i], pos);
+        assert new HashSet<>(Arrays.asList(result)).size() == result.length : "duplicate environments";
+        return result;
     }
 
     /** The (cached) transition of matcher state `state` on `codepoint`. */
@@ -181,15 +210,29 @@ public class Matcher {
         return state.acceptOps;
     }
 
-    /** All the ways the regular expression matches the entire input s. */
-    public List<Match> match(String s) throws FailedMatch {
-        return match(new BacktrackScanner(new BacktrackScanner.ReaderSource(new StringReader(s), s)));
+    /** All the ways the regular expression matches the entire input s, in no
+     *  particular order. Throws FailedMatch if there are none. */
+    public List<Match> match(CharSequence s) throws FailedMatch {
+        Run run = new Run(false);
+        int n = s.length();
+        for (int i = 0; i < n; ) {
+            int ch = Character.codePointAt(s, i);
+            run.step(ch);
+            if (run.state.isVoid()) {
+                throw FailedMatch.exception;
+            }
+            i += Character.charCount(ch);
+        }
+        List<Match> result = run.results(s.toString());
+        if (result.isEmpty()) throw FailedMatch.exception;
+        return result;
     }
 
     /** All the ways the regular expression matches the entire input, in no
-     *  particular order. Throws FailedMatch if there are none. */
+     *  particular order. Throws FailedMatch if there are none. The input is
+     *  read lazily, one character at a time. */
     public List<Match> match(BacktrackScanner s) throws FailedMatch {
-        Run run = new Run();
+        Run run = new Run(true);
         while (s.hasNext()) {
             int ch;
             try {
@@ -220,7 +263,7 @@ public class Matcher {
         // it avoids the typical quadratic worst-case complexity of maximal munch tokenization.
         // Hopelessness depends only on the skeleton state, not on the capture state.
         List<Match> found = null;
-        Run run = new Run();
+        Run run = new Run(true);
         if (hopelessStates == null) hopelessStates = new HashSet<>();
         Map<Integer, IndexedState> seenStates = new HashMap<>(); // states seen along the way
         s.mark(); // start mark
@@ -252,7 +295,7 @@ public class Matcher {
                 s.abort(); // clear old start mark
                 s.advance();
                 s.mark(); // new start mark
-                run = new Run();
+                run = new Run(true);
             }
         }
         if (found != null) return finishSearch(s, end, seenStates, found);

@@ -418,4 +418,13 @@ public class SimpleTests {
         new Matcher("ab*").search(sc);
         assertEquals("abbb", sc.getToken());
     }
+
+    // Matching lazily from a scanner gives the same matches as matching a string
+    @Test void scannerMatch01() throws Matcher.FailedMatch {
+        Matcher m = new Matcher("((a*))((a*))b");
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("aab"));
+        Set<String> fromScanner = m.match(sc).stream().map(Match::toString).collect(Collectors.toSet());
+        assertEquals(matches(m, "aab"), fromScanner);
+        assertEquals(3, fromScanner.size());
+    }
 }
