@@ -674,4 +674,18 @@ public class SimpleTests {
         RegExp c = capture(string("a"));
         assertEquals(Set.of("⟨a⟩1 ⟨a⟩2"), matches(new Matcher(concat(c, c)), "aa"));
     }
+
+    // An empty alternative matches the empty string; '|' is never literal
+    @Test void emptyAlternative() {
+        assertTrue(matchesAll("|a", ""));
+        assertTrue(matchesAll("|a", "a"));
+        assertFalse(matchesAll("|a", "|a"));
+        assertTrue(matchesAll("x(|a)y", "xy"));
+        assertTrue(matchesAll("x(|a)y", "xay"));
+        assertTrue(matchesAll("a||b", ""));
+        assertTrue(matchesAll("a||b", "b"));
+        assertTrue(matchesAll("a|", ""));
+        assertTrue(matchesAll("{|a}", ""));
+        assertTrue(matchesAll("\\|", "|"));
+    }
 }

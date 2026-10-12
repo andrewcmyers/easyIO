@@ -125,7 +125,9 @@ public class Parser {
             switch (b.peek()) {
                 case ')':
                 case '}':
-                    return empty();
+                case '|':
+                    return empty(); // an empty alternative, e.g. in (|a) or a||b
+
                 case '(': {
                     b.next();
                     RegExp alts = parseAlts(b, nextCapture);
