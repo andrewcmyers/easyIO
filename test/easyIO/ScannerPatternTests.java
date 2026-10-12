@@ -119,4 +119,13 @@ public class ScannerPatternTests {
         sc.appendSource(new StringReader("c"), "appended");
         assertEquals("aac", sc.next(m));
     }
+
+    // The cache of parsed patterns is bounded, so many distinct patterns do not accumulate
+    @Test void patternCacheIsBounded() throws UnexpectedInput {
+        for (int i = 0; i < 3 * Scanner.PATTERN_CACHE_SIZE; i++) {
+            Scanner sc = scanner("x" + i);
+            assertEquals("x" + i, sc.next("x" + i));
+        }
+        assertTrue(Scanner.cachedPatterns() <= Scanner.PATTERN_CACHE_SIZE);
+    }
 }

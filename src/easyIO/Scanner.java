@@ -7,9 +7,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** A {@code BacktrackScanner} extended with convenience methods for
  * parsing common things like integers and identifiers.
@@ -321,13 +322,30 @@ public class Scanner extends BacktrackScanner {
 		}
 	}
 
-	/** Matchers for the patterns passed to next(String) and hasNext(String). */
-	private static final Map<String, Matcher> patterns = new ConcurrentHashMap<>();
+	/** The maximum number of patterns whose matchers are cached. */
+	static final int PATTERN_CACHE_SIZE = 100;
+
+	/** Matchers for the patterns most recently passed to next(String) and
+	 *  hasNext(String), so that a pattern used repeatedly is parsed only once. The
+	 *  least recently used pattern is evicted when the cache is full, so programs
+	 *  that construct many distinct patterns do not accumulate matchers. */
+	private static final Map<String, Matcher> patterns = Collections.synchronizedMap(
+			new LinkedHashMap<>(16, 0.75f, true) { // access order, for LRU eviction
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<String, Matcher> eldest) {
+					return size() > PATTERN_CACHE_SIZE;
+				}
+			});
 
 	/** The matcher for a pattern, parsed once and cached.
 	 *  @throws IllegalArgumentException if the pattern is not a valid regular expression. */
 	private static Matcher matcher(String pattern) {
-		return patterns.computeIfAbsent(pattern, Matcher::new);
+		return patterns.computeIfAbsent(pattern, Matcher::new); // atomic: the map is synchronized
+	}
+
+	/** The number of patterns currently cached. For testing. */
+	static int cachedPatterns() {
+		return patterns.size();
 	}
 
 	/**
