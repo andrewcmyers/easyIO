@@ -37,7 +37,14 @@ public class Matcher {
     private final RegExp expr;
     private final int numCaptures;
 
-    private Set<IndexedState> hopelessStates = null;
+    /** For each scanner searched with this matcher, the states known not to lead to a
+     *  match. Input positions are only meaningful for the scanner they were learned
+     *  from, so the states are kept separately for each scanner. The keys are weak so
+     *  that a scanner can be garbage-collected, and the map is synchronized so that a
+     *  Matcher can be used by several threads at once. A scanner itself must be used
+     *  by only one thread at a time. */
+    private final Map<BacktrackScanner, Set<IndexedState>> hopelessStates =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     /** Create a matcher for r. Captures in r that do not have an index are numbered
      *  in tree order, after any captures that do.
@@ -61,7 +68,7 @@ public class Matcher {
     }
 
     public static class FailedMatch extends Exception {
-        static FailedMatch exception = new FailedMatch();
+        static final FailedMatch exception = new FailedMatch();
     }
 
     /** One run of the matcher over some input: the current skeleton state and the
@@ -164,7 +171,6 @@ public class Matcher {
             }
             return t;
         }
-        if (state.transitions == null) state.transitions = new HashMap<>();
         Transition t = state.transitions.get(codepoint);
         if (t == null) {
             t = computeTransition(state, codepoint);
@@ -211,12 +217,14 @@ public class Matcher {
 
     /** The (cached) accepting ops of each position of matcher state `state`. */
     static Ops[][] acceptOps(RegExp state) {
-        if (state.acceptOps == null) {
-            state.acceptOps = Arrays.stream(summands(state))
+        Ops[][] result = state.acceptOps;
+        if (result == null) {
+            result = Arrays.stream(summands(state))
                     .map(r -> r.nullOps().toArray(new Ops[0]))
                     .toArray(Ops[][]::new);
+            state.acceptOps = result;
         }
-        return state.acceptOps;
+        return result;
     }
 
     /** All the ways the regular expression matches the entire input s, in no
@@ -264,65 +272,70 @@ public class Matcher {
      *  is left at the end of the longest string that matches the RE, so that the client
      *  can choose to accept or abort the match. All the ways the occurrence matches
      *  are returned, with capture positions relative to the start of the occurrence.
-     *  If no occurrence is found, the scanner goes to the end of the input and
-     *  FailedMatch is thrown.
+     *  Occurrences of the empty string are not found.
+     *  If no occurrence is found, the scanner goes to the end of the input, no mark is
+     *  left, and FailedMatch is thrown.
      */
     public List<Match> search(BacktrackScanner s) throws FailedMatch {
-        // This implementation avoids backtracking by memoizing hopeless states, so
-        // it avoids the typical quadratic worst-case complexity of maximal munch tokenization.
-        // Hopelessness depends only on the skeleton state, not on the capture state.
+        // This implementation avoids backtracking by memoizing hopeless states: a state
+        // reached at a given input position from which no match can end. Without the
+        // memo, maximal munch tokenization has quadratic worst-case complexity, since
+        // each attempt may scan to the end of the input. Hopelessness depends only on
+        // the skeleton state, not on the capture state, and positions are only
+        // meaningful for this scanner.
+        Set<IndexedState> hopeless = hopelessStates.computeIfAbsent(s, k -> new HashSet<>());
         List<Match> found = null;
         Run run = new Run(true);
-        if (hopelessStates == null) hopelessStates = new HashSet<>();
-        Map<Integer, IndexedState> seenStates = new HashMap<>(); // states seen along the way
+        // The state after each position since `end` (or since the start, if there is no
+        // match yet), keyed by the input position just after reading a character.
+        Map<Integer, IndexedState> seenStates = new HashMap<>();
         s.mark(); // start mark
         int end = s.inputPosition();
-        while (s.hasNext()) {
+        while (true) {
             // if success:  ---------^---------^--------|------
             //                     start.     end.     current
             //
             //.if no success: --------^------------------|-----
             //                      start              current
-            try {
-                int pos = s.inputPosition();
-                int ch = s.nextCodePoint();
-                run.step(ch);
-                seenStates.put(pos, new IndexedState(pos, run.state));
-            } catch (EOF exc) {
-                break;
-            }
-            if (run.state.nullable()) {
-                if (found != null) s.accept(); // drop the previous end mark
-                found = run.results();
-                s.mark(); // end mark, so we can roll back to this position
-                end = s.inputPosition();
-            } else if (run.state.isVoid() || hopelessStates.contains(new IndexedState(s.inputPosition(), run.state))) {
-                if (DEBUG && hopelessStates.contains(new IndexedState(s.inputPosition(), run.state))) {
-                    println("Abandoning early because state is hopeless");
+            boolean stuck; // whether no longer match can be found from this start
+            if (!s.hasNext()) {
+                stuck = true;
+            } else {
+                int ch;
+                try {
+                    ch = s.nextCodePoint();
+                } catch (EOF exc) {
+                    throw new Error("cannot happen: hasNext() was true");
                 }
-                if (found != null) return finishSearch(s, end, seenStates, found);
-                s.abort(); // clear old start mark
-                s.advance();
-                s.mark(); // new start mark
-                run = new Run(true);
+                run.step(ch);
+                IndexedState here = new IndexedState(s.inputPosition(), run.state);
+                if (run.state.nullable()) {
+                    if (found != null) s.accept(); // drop the previous end mark
+                    found = run.results();
+                    s.mark(); // end mark, so we can roll back to this position
+                    end = s.inputPosition();
+                    seenStates.clear();
+                    continue;
+                }
+                seenStates.put(here.inputPosition(), here);
+                stuck = run.state.isVoid() || hopeless.contains(here);
+                if (DEBUG && !run.state.isVoid() && stuck) println("Abandoning early because state is hopeless");
             }
+            if (!stuck) continue;
+            // None of the states seen since `end` (or since the start) leads to a match.
+            hopeless.addAll(seenStates.values());
+            seenStates.clear();
+            if (found != null) {
+                s.abort(); // roll back to the end mark
+                return found;
+            }
+            s.abort(); // roll back to the start mark and erase it
+            if (!s.hasNext()) throw FailedMatch.exception;
+            s.advance();
+            if (!s.hasNext()) throw FailedMatch.exception;
+            s.mark(); // new start mark
+            run = new Run(true);
+            end = s.inputPosition();
         }
-        if (found != null) return finishSearch(s, end, seenStates, found);
-        throw FailedMatch.exception;
-    }
-
-    /** Record the states seen after the last successful end as hopeless, and roll back
-     *  to the end mark. */
-    private List<Match> finishSearch(BacktrackScanner s, int end, Map<Integer, IndexedState> seenStates,
-                                     List<Match> found) {
-        int pos = s.inputPosition();
-        for (int i = end; i < pos; i++) {
-            IndexedState h = seenStates.get(i);
-            assert h != null;
-            hopelessStates.add(h);
-        }
-        s.abort(); // roll back to previous end mark
-        seenStates.clear();
-        return found;
     }
 }

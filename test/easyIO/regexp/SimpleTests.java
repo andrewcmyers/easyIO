@@ -427,4 +427,44 @@ public class SimpleTests {
         assertEquals(matches(m, "aab"), fromScanner);
         assertEquals(3, fromScanner.size());
     }
+
+    /** The tokens found by searching repeatedly with m. */
+    private static List<String> tokens(Matcher m, BacktrackScanner sc) {
+        List<String> result = new java.util.ArrayList<>();
+        try {
+            while (true) {
+                m.search(sc);
+                result.add(sc.getToken());
+                sc.accept();
+            }
+        } catch (Matcher.FailedMatch e) {
+            return result;
+        }
+    }
+
+    // A search that reaches the end of the input without a match retries from the
+    // next start position: here the final a.
+    @Test void search02() throws Matcher.FailedMatch {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("ba"));
+        new Matcher("(a|b)*c|a").search(sc);
+        assertEquals("a", sc.getToken());
+        Matcher m = new Matcher("(a|b)*c|a");
+        assertEquals(List.of("a", "a", "a"), tokens(m, new BacktrackScanner(new StringReader("aaba"))));
+    }
+
+    // What a matcher learns about one scanner's input must not affect another's.
+    @Test void search03() {
+        Matcher m = new Matcher("ab*c|a");
+        assertEquals(List.of("a"), tokens(m, new BacktrackScanner(new StringReader("abbx"))));
+        assertEquals(List.of("abbc"), tokens(m, new BacktrackScanner(new StringReader("abbc"))));
+    }
+
+    // A failed search leaves the scanner at the end of the input with no mark.
+    @Test void search04() {
+        BacktrackScanner sc = new BacktrackScanner(new StringReader("xyz"));
+        int depth = sc.depth();
+        assertThrows(Matcher.FailedMatch.class, () -> new Matcher("ab").search(sc));
+        assertEquals(depth, sc.depth());
+        assertEquals(false, sc.hasNext());
+    }
 }

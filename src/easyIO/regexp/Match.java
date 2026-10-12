@@ -16,22 +16,22 @@ public final class Match {
 
     /** The number of capture groups (not counting group 0). */
     public int groupCount() {
-        return env.starts.length - 1;
+        return env.size() - 1;
     }
 
     /** Whether capture k matched something (possibly empty) in this match. */
     public boolean isSet(int k) {
-        return k == 0 || env.starts[k] != -1;
+        return k == 0 || env.start(k) != -1;
     }
 
     /** The start of capture k, or -1 if it did not participate in this match. */
     public int start(int k) {
-        return k == 0 ? 0 : env.starts[k];
+        return k == 0 ? 0 : env.start(k);
     }
 
     /** The end of capture k, or -1 if it did not participate in this match. */
     public int end(int k) {
-        return k == 0 ? text.length() : env.ends[k];
+        return k == 0 ? text.length() : env.end(k);
     }
 
     /** The text captured by capture k, or null if it did not participate in this match. */

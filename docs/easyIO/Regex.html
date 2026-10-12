@@ -85,7 +85,7 @@ loadScripts(document, 'script');</script>
 <h1 title="Class Regex" class="title">Class Regex</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
-<div class="inheritance">easyIO.Regex</div>
+<div class="inheritance">easyIO.recognizer.Regex</div>
 </div>
 <section class="class-description" id="class-description">
 <hr>
@@ -115,7 +115,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#advanceToPattern(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">advanceToPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#advanceToPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">advanceToPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Advance the scanner position to the point where the pattern
@@ -123,7 +123,7 @@ loadScripts(document, 'script');</script>
  the input if it is not found.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#alt(easyIO.Recognizer,easyIO.Recognizer)" class="member-name-link">alt</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#alt(easyIO.recognizer.Recognizer,easyIO.recognizer.Recognizer)" class="member-name-link">alt</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;b)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Recognizes either a or b (regular expression a|b)</div>
@@ -134,7 +134,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Recognizer that matches any single character in the string <code>c</code></div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#concat(easyIO.Recognizer,easyIO.Recognizer)" class="member-name-link">concat</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#concat(easyIO.recognizer.Recognizer,easyIO.recognizer.Recognizer)" class="member-name-link">concat</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;b)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Recognizes a followed by b (regular expression ab)</div>
@@ -145,7 +145,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Recognizes all of the characters in c, in sequence.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#hasPattern(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">hasPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#hasPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">hasPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Whether the next characters on the input can be matched by r.</div>
@@ -156,24 +156,24 @@ loadScripts(document, 'script');</script>
 <div class="block">Recognizer that matches any single character <em>not</em> in the string <code>c</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#oneOrMore(easyIO.Recognizer)" class="member-name-link">oneOrMore</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#oneOrMore(easyIO.recognizer.Recognizer)" class="member-name-link">oneOrMore</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Recognizes 1 or more instances of a (a+)</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#opt(easyIO.Recognizer)" class="member-name-link">opt</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#opt(easyIO.recognizer.Recognizer)" class="member-name-link">opt</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Recognizes 0 or 1 instance of a (regular expression a?)</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parsePattern(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">parsePattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parsePattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">parsePattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Match the input characters starting at the current position against the
  pattern r and return the characters matched.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parseToDelimiter(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">parseToDelimiter</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parseToDelimiter(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">parseToDelimiter</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;delim)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Return all the characters from the current scanner position up
@@ -183,19 +183,19 @@ loadScripts(document, 'script');</script>
  pattern was never found.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parseToPattern(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">parseToPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#parseToPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">parseToPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Return all the text between the current scanner position and the
   first occurrence of the pattern recognized by r.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#repeat(easyIO.Recognizer)" class="member-name-link">repeat</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#repeat(easyIO.recognizer.Recognizer)" class="member-name-link">repeat</a><wbr>(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Recognizes 0 or more instances of a (regular expression a*)</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#scanPattern(easyIO.BacktrackScanner,easyIO.Recognizer)" class="member-name-link">scanPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#scanPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)" class="member-name-link">scanPattern</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Match the input characters starting at the current position against the
@@ -225,7 +225,7 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="scanPattern(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="scanPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>scanPattern</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">scanPattern</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</span>
@@ -242,7 +242,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="parsePattern(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="parsePattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>parsePattern</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">parsePattern</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</span>
@@ -258,7 +258,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="parseToDelimiter(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="parseToDelimiter(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>parseToDelimiter</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">parseToDelimiter</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;delim)</span></div>
@@ -270,7 +270,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="hasPattern(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="hasPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>hasPattern</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">hasPattern</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</span></div>
@@ -278,7 +278,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="advanceToPattern(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="advanceToPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>advanceToPattern</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">advanceToPattern</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</span></div>
@@ -288,7 +288,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="parseToPattern(easyIO.BacktrackScanner,easyIO.Recognizer)">
+<section class="detail" id="parseToPattern(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer)">
 <h3>parseToPattern</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">parseToPattern</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;sc,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;r)</span></div>
@@ -297,7 +297,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="concat(easyIO.Recognizer,easyIO.Recognizer)">
+<section class="detail" id="concat(easyIO.recognizer.Recognizer,easyIO.recognizer.Recognizer)">
 <h3>concat</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></span>&nbsp;<span class="element-name">concat</span><wbr><span class="parameters">(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;b)</span></div>
@@ -305,7 +305,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="alt(easyIO.Recognizer,easyIO.Recognizer)">
+<section class="detail" id="alt(easyIO.recognizer.Recognizer,easyIO.recognizer.Recognizer)">
 <h3>alt</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></span>&nbsp;<span class="element-name">alt</span><wbr><span class="parameters">(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a,
  <a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;b)</span></div>
@@ -313,21 +313,21 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="opt(easyIO.Recognizer)">
+<section class="detail" id="opt(easyIO.recognizer.Recognizer)">
 <h3>opt</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></span>&nbsp;<span class="element-name">opt</span><wbr><span class="parameters">(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</span></div>
 <div class="block">Recognizes 0 or 1 instance of a (regular expression a?)</div>
 </section>
 </li>
 <li>
-<section class="detail" id="repeat(easyIO.Recognizer)">
+<section class="detail" id="repeat(easyIO.recognizer.Recognizer)">
 <h3>repeat</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></span>&nbsp;<span class="element-name">repeat</span><wbr><span class="parameters">(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</span></div>
 <div class="block">Recognizes 0 or more instances of a (regular expression a*)</div>
 </section>
 </li>
 <li>
-<section class="detail" id="oneOrMore(easyIO.Recognizer)">
+<section class="detail" id="oneOrMore(easyIO.recognizer.Recognizer)">
 <h3>oneOrMore</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></span>&nbsp;<span class="element-name">oneOrMore</span><wbr><span class="parameters">(<a href="Recognizer.html" title="interface in easyIO">Recognizer</a>&nbsp;a)</span></div>
 <div class="block">Recognizes 1 or more instances of a (a+)</div>

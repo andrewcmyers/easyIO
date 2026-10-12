@@ -1,4 +1,6 @@
-package easyIO;
+package easyIO.recognizer;
+
+import easyIO.BacktrackScanner;
 
 /**
  * A Recognizer recognizes certain input sequences of characters available on a

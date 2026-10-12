@@ -1,4 +1,6 @@
-package easyIO;
+package easyIO.recognizer;
+
+import easyIO.BacktrackScanner;
 
 /** A Recognizer that decides what other recognizer to use based on the lookahead character.
  */

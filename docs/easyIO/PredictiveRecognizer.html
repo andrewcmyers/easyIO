@@ -85,7 +85,7 @@ loadScripts(document, 'script');</script>
 <h1 title="Class PredictiveRecognizer" class="title">Class PredictiveRecognizer</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
-<div class="inheritance">easyIO.PredictiveRecognizer</div>
+<div class="inheritance">easyIO.recognizer.PredictiveRecognizer</div>
 </div>
 <section class="class-description" id="class-description">
 <dl class="notes">
@@ -105,7 +105,7 @@ implements <a href="Recognizer.html" title="interface in easyIO">Recognizer</a><
 <section class="nested-class-summary" id="nested-class-summary">
 <h2>Nested Class Summary</h2>
 <div class="inherited-list">
-<h2 id="nested-classes-inherited-from-class-easyIO.Recognizer">Nested classes/interfaces inherited from interface&nbsp;easyIO.<a href="Recognizer.html" title="interface in easyIO">Recognizer</a></h2>
+<h2 id="nested-classes-inherited-from-class-easyIO.recognizer.Recognizer">Nested classes/interfaces inherited from interface&nbsp;easyIO.<a href="Recognizer.html" title="interface in easyIO">Recognizer</a></h2>
 <code><a href="Recognizer.Continuation.html" title="interface in easyIO">Recognizer.Continuation</a>, <a href="Recognizer.Success.html" title="class in easyIO">Recognizer.Success</a></code></div>
 </section>
 </li>
@@ -134,7 +134,7 @@ implements <a href="Recognizer.html" title="interface in easyIO">Recognizer</a><
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recognize(easyIO.BacktrackScanner,easyIO.Recognizer.Continuation)" class="member-name-link">recognize</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;inp,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recognize(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer.Continuation)" class="member-name-link">recognize</a><wbr>(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;inp,
  <a href="Recognizer.Continuation.html" title="interface in easyIO">Recognizer.Continuation</a>&nbsp;cont)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">For each possible way of recognizing the input, advance <code>inp</code>
@@ -172,19 +172,19 @@ implements <a href="Recognizer.html" title="interface in easyIO">Recognizer</a><
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="recognize(easyIO.BacktrackScanner,easyIO.Recognizer.Continuation)">
+<section class="detail" id="recognize(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer.Continuation)">
 <h3>recognize</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">recognize</span><wbr><span class="parameters">(<a href="BacktrackScanner.html" title="class in easyIO">BacktrackScanner</a>&nbsp;inp,
  <a href="Recognizer.Continuation.html" title="interface in easyIO">Recognizer.Continuation</a>&nbsp;cont)</span>
                throws <span class="exceptions"><a href="Recognizer.Success.html" title="class in easyIO">Recognizer.Success</a></span></div>
-<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="Recognizer.html#recognize(easyIO.BacktrackScanner,easyIO.Recognizer.Continuation)">Recognizer</a></code></span></div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="Recognizer.html#recognize(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer.Continuation)">Recognizer</a></code></span></div>
 <div class="block">For each possible way of recognizing the input, advance <code>inp</code>
   past the point where the input is recognized and invoke <code>cont</code>.
   If the continuation throws <code>Success</code>, leave the input position
   where it is and throw the same exception to the caller.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="Recognizer.html#recognize(easyIO.BacktrackScanner,easyIO.Recognizer.Continuation)">recognize</a></code>&nbsp;in interface&nbsp;<code><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></dd>
+<dd><code><a href="Recognizer.html#recognize(easyIO.BacktrackScanner,easyIO.recognizer.Recognizer.Continuation)">recognize</a></code>&nbsp;in interface&nbsp;<code><a href="Recognizer.html" title="interface in easyIO">Recognizer</a></code></dd>
 <dt>Throws:</dt>
 <dd><code><a href="Recognizer.Success.html" title="class in easyIO">Recognizer.Success</a></code></dd>
 </dl>

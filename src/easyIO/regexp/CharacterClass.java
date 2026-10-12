@@ -4,8 +4,8 @@ import static easyIO.regexp.StringRE.empty;
 import static easyIO.regexp.StringRE.quote;
 
 public class CharacterClass extends RegExp {
-    private int start, end;
-    boolean negated;
+    final private int start, end;
+    final boolean negated;
     public CharacterClass(int start, int end, boolean negated) {
         this.start = start;
         this.end = end;

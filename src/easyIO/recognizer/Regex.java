@@ -1,7 +1,9 @@
-package easyIO;
+package easyIO.recognizer;
 
-import easyIO.Recognizer.Continuation;
-import easyIO.Recognizer.Success;
+import easyIO.BacktrackScanner;
+import easyIO.UnexpectedInput;
+import easyIO.recognizer.Recognizer.Continuation;
+import easyIO.recognizer.Recognizer.Success;
 
 /** Regular expression support for {@code easyIO.Scanner}
  * @see easyIO.Scanner easyIO.Scanner */

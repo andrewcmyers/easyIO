@@ -62,11 +62,22 @@ public final class Ops {
      *  means it is open, and [starts[k], ends[k]) is its span when complete.
      */
     static final class Env {
-        final int[] starts, ends;
+        // invariant: starts.length == ends.length
+        private final int[] starts, ends;
 
         Env(int[] starts, int[] ends) {
             this.starts = starts;
             this.ends = ends;
+        }
+
+        int size() {
+            return starts.length;
+        }
+        int start(int k) {
+            return starts[k];
+        }
+        int end(int k) {
+            return ends[k];
         }
 
         /** The environment with no captures mapped, for captures numbered 1..n. */
