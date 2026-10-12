@@ -165,6 +165,11 @@ public abstract class RegExp {
     }
 
     /** The largest capture index in this RE, or 0 if there are none. */
+    /** Add the index of every capture in this RE to indices, once for each place
+     *  the capture occurs. Default behavior: there are no captures. */
+    protected void addCaptureIndices(java.util.List<Integer> indices) {
+    }
+
     protected int maxCaptureIndex() {
         return 0;
     }

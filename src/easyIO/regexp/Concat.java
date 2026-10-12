@@ -127,6 +127,12 @@ public class Concat extends RegExp {
     }
 
     @Override
+    protected void addCaptureIndices(List<Integer> indices) {
+        if (!hasCaptures) return;
+        for (RegExp r : exprs) r.addCaptureIndices(indices);
+    }
+
+    @Override
     protected int maxCaptureIndex() {
         return Arrays.stream(exprs).mapToInt(RegExp::maxCaptureIndex).max().orElse(0);
     }

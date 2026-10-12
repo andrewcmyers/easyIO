@@ -39,19 +39,36 @@ public class Matcher {
 
     /** For each scanner searched with this matcher, the states known not to lead to a
      *  match. Input positions are only meaningful for the scanner they were learned
-     *  from, so the states are kept separately for each scanner. The keys are weak so
-     *  that a scanner can be garbage-collected, and the map is synchronized so that a
-     *  Matcher can be used by several threads at once. A scanner itself must be used
-     *  by only one thread at a time. */
-    private final Map<BacktrackScanner, Set<IndexedState>> hopelessStates =
+     *  from, and only until its input is changed by including or appending a source,
+     *  so the states are kept separately for each scanner, along with the scanner's
+     *  input version when they were learned. The keys are weak so that a scanner can
+     *  be garbage-collected, and the map is synchronized so that a Matcher can be
+     *  used by several threads at once. A scanner itself must be used by only one
+     *  thread at a time. */
+    private final Map<BacktrackScanner, HopelessStates> hopelessStates =
             Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** Hopeless states learned for a scanner while its input version was inputVersion. */
+    private record HopelessStates(int inputVersion, Set<IndexedState> states) {}
 
     /** Create a matcher for r. Captures in r that do not have an index are numbered
      *  in tree order, after any captures that do.
-     *  Throws IllegalArgumentException if a capture occurs inside a Kleene star. */
+     *  Throws IllegalArgumentException if a capture occurs inside a Kleene star, or
+     *  if two captures have the same index (as happens when combining patterns that
+     *  were parsed separately with their captures numbered from 1). */
     public Matcher(RegExp r) {
         expr = r.numberCaptures(new int[]{Math.max(0, r.maxCaptureIndex()) + 1});
         numCaptures = expr.maxCaptureIndex();
+        List<Integer> indices = new ArrayList<>();
+        expr.addCaptureIndices(indices);
+        Set<Integer> seen = new HashSet<>();
+        for (int k : indices) {
+            if (!seen.add(k)) {
+                throw new IllegalArgumentException("capture " + k + " occurs more than once in " + expr
+                        + "; to combine separately parsed patterns, number their captures"
+                        + " apart with Parser.parse(pattern, firstCapture)");
+            }
+        }
     }
     /** Create a matcher based on a regular expression to be parsed.
      * Requires: the regular expression must be valid. */
@@ -326,9 +343,13 @@ public class Matcher {
         }
     }
 
-    /** The hopeless states learned so far for scanner s. */
+    /** The hopeless states learned so far for scanner s, discarding any learned
+     *  before its input last changed. */
     private Set<IndexedState> hopelessFor(BacktrackScanner s) {
-        return hopelessStates.computeIfAbsent(s, k -> new HashSet<>());
+        int version = s.inputVersion();
+        return hopelessStates.compute(s, (k, h) ->
+                h != null && h.inputVersion() == version ? h : new HopelessStates(version, new HashSet<>())
+        ).states();
     }
 
     /** Run `run` from the current position until no longer match is possible.

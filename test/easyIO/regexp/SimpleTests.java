@@ -651,4 +651,27 @@ public class SimpleTests {
             assertSame(r, parse(printed.substring(1, printed.length() - 1)), p);
         }
     }
+
+    // Combining separately parsed patterns can give two captures the same number,
+    // which is rejected rather than silently losing one of them
+    @Test void duplicateCaptures01() throws Parser.SyntaxError {
+        RegExp r = concat(parse("{a}"), parse("{b}"));
+        assertThrows(IllegalArgumentException.class, () -> new Matcher(r));
+    }
+
+    // Numbering captures apart when parsing allows the patterns to be combined
+    @Test void duplicateCaptures02() throws Parser.SyntaxError, Matcher.FailedMatch {
+        RegExp r = concat(parse("{a}", 1), parse("{b}{c}", 2));
+        assertEquals(Set.of("⟨a⟩1 ⟨b⟩2 ⟨c⟩3"), matches(new Matcher(r), "abc"));
+        assertThrows(IllegalArgumentException.class, () -> parse("{a}", 0));
+    }
+
+    // Identical alternatives with the same capture are merged by alt, so they are
+    // not duplicates; the same unnumbered capture used twice gets two numbers
+    @Test void duplicateCaptures03() throws Parser.SyntaxError, Matcher.FailedMatch {
+        RegExp r = alt(parse("{a}"), parse("{a}"));
+        assertEquals(Set.of("⟨a⟩1"), matches(new Matcher(r), "a"));
+        RegExp c = capture(string("a"));
+        assertEquals(Set.of("⟨a⟩1 ⟨a⟩2"), matches(new Matcher(concat(c, c)), "aa"));
+    }
 }

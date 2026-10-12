@@ -100,4 +100,23 @@ public class ScannerPatternTests {
         assertEquals("42", sc.next("[0-9][0-9]*"));
         assertEquals(';', sc.peek());
     }
+
+    // What a matcher has learned about a scanner's input is discarded when input is
+    // included ahead of the current position...
+    @Test void memoAfterIncludeSource() throws UnexpectedInput {
+        Scanner sc = scanner("aaab");
+        Matcher m = new Matcher("a*c|a");
+        assertTrue(sc.hasNext(m)); // learns that a*c cannot match here
+        sc.includeSource(new StringReader("aac"), "included");
+        assertEquals("aac", sc.next(m));
+    }
+
+    // ...or appended after the end of the input.
+    @Test void memoAfterAppendSource() throws UnexpectedInput {
+        Scanner sc = scanner("aa");
+        Matcher m = new Matcher("a*c|a");
+        assertTrue(sc.hasNext(m)); // reaches the end of the input without finding c
+        sc.appendSource(new StringReader("c"), "appended");
+        assertEquals("aac", sc.next(m));
+    }
 }

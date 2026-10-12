@@ -48,8 +48,18 @@ public class Parser {
     /** Parse a regular expression. Captures are numbered 1, 2, ... in the order
      *  their opening braces appear. */
     public static RegExp parse(String s) throws SyntaxError {
+        return parse(s, 1);
+    }
+
+    /** Parse a regular expression, numbering its captures firstCapture,
+     *  firstCapture + 1, ... in the order their opening braces appear. This allows
+     *  patterns parsed separately to be combined without their capture numbers
+     *  colliding, e.g. concat(parse("{a}", 1), parse("{b}", 2)).
+     *  Requires: firstCapture ≥ 1. */
+    public static RegExp parse(String s, int firstCapture) throws SyntaxError {
+        if (firstCapture < 1) throw new IllegalArgumentException("capture numbers start at 1");
         BacktrackScanner b = new BacktrackScanner(new StringReader(s));
-        RegExp r = parseAlts(b);
+        RegExp r = parseAlts(b, new int[]{firstCapture});
         // parseAlts stops at an unmatched ')' or '}'; the whole pattern must be consumed.
         if (b.hasNext()) throw new SyntaxError(b);
         return r;

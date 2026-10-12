@@ -56,6 +56,12 @@ public class ActiveCapture extends RegExp {
     }
 
     @Override
+    protected void addCaptureIndices(List<Integer> indices) {
+        indices.add(captureIndex);
+        pattern.addCaptureIndices(indices);
+    }
+
+    @Override
     protected int maxCaptureIndex() {
         return Math.max(captureIndex, pattern.maxCaptureIndex());
     }
