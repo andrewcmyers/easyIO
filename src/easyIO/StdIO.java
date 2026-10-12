@@ -14,6 +14,8 @@ import java.io.PrintWriter;
     import static easyIO.StdIO.*;
     ...
     </pre>
+
+	This class is largely superseded in recent Java by the IO class.
     
     */
 public class StdIO {

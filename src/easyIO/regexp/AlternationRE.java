@@ -13,32 +13,64 @@ import static easyIO.regexp.StringRE.string;
  */
 public class AlternationRE extends RegExp {
     private final RegExp[] exprs;
-    private boolean isVoid, computedVoid = false;
+    private final boolean hasCaptures;
 
     /** An RE for r|s */
     private AlternationRE(RegExp ...rs) {
         exprs = rs;
-        assert !Arrays.stream(exprs).anyMatch(RegExp::isVoid);
+        hasCaptures = Arrays.stream(exprs).anyMatch(RegExp::hasCaptures);
+        assert Arrays.stream(exprs).noneMatch(RegExp::isVoid);
+    }
+    Stream<RegExp> exprs() {
+        return Arrays.stream(exprs);
     }
     @Override public boolean isVoid() {
-        if (computedVoid) return isVoid;
-        isVoid = Arrays.stream(exprs).allMatch(RegExp::isVoid);
-        computedVoid = true;
-        return isVoid;
+        return false; // alternatives are never void
     }
     @Override public boolean nullable() {
         return Arrays.stream(exprs).anyMatch(RegExp::nullable);
     }
-
+    @Override public boolean hasCaptures() {
+        return hasCaptures;
+    }
 
     @Override
     protected RegExp computeDerivative(int codepoint) {
-        // Dx (a + b) = (Dx a) + (Dx b)
-        RegExp[] derivatives = Arrays.stream(exprs)
-                .map(r -> r.derivative(codepoint))
-                .toList()
-                .toArray(RegExps);
-        return alt(derivatives);
+        // Dx (a + b + ...) = (Dx a) + (Dx b) + ...
+        return alt(Arrays.stream(exprs).map(r -> r.derivative(codepoint)).toArray(RegExp[]::new));
+    }
+
+    @Override
+    protected List<DerivTerm> computeTermDerivative(int codepoint) {
+        // Dx (a + b + ...) = (Dx a) + (Dx b) + ..., keeping the summands separate
+        List<DerivTerm> result = new ArrayList<>();
+        for (RegExp r : exprs) result.addAll(r.termDerivative(codepoint));
+        return result;
+    }
+
+    @Override
+    protected List<Ops> computeNullOps() {
+        // ν(R+S) = νR + νS
+        List<Ops> result = new ArrayList<>();
+        for (RegExp r : exprs) result.addAll(r.nullOps());
+        return distinct(result);
+    }
+
+    @Override
+    protected RegExp numberCaptures(int[] next) {
+        if (!hasCaptures) return this;
+        return alt(Arrays.stream(exprs).map(r -> r.numberCaptures(next)).toArray(RegExp[]::new));
+    }
+
+    @Override
+    protected void addCaptureIndices(List<Integer> indices) {
+        if (!hasCaptures) return;
+        for (RegExp r : exprs) r.addCaptureIndices(indices);
+    }
+
+    @Override
+    protected int maxCaptureIndex() {
+        return Arrays.stream(exprs).mapToInt(RegExp::maxCaptureIndex).max().orElse(0);
     }
 
     public static RegExp alt(RegExp ...exprs) {
@@ -46,20 +78,34 @@ public class AlternationRE extends RegExp {
         //  1) flattening nested alternatives
         //  2) dropping void alternatives
         //  3) dropping redundant alternatives
-        //  4) sorting alternatives
-        Set<RegExp> uniques =
-                Arrays.stream(exprs).filter(r -> !r.isVoid())
-                        .flatMap(AlternationRE::flatten)
-                        .collect(Collectors.toSet());
-        if (uniques.contains(everything)) return everything;
-        RegExp[] uniques_a = uniques.toArray(RegExps);
-        Arrays.sort(uniques_a, Comparator.comparingInt(RegExp::hashCode));
-        return switch (uniques_a.length) {
+        //  4) absorbing everything else into Σ*, if present and there are no captures
+        Set<RegExp> uniques = uniques(exprs);
+        if (uniques.contains(everything) && uniques.stream().noneMatch(RegExp::hasCaptures))
+            return everything;
+        return fromUniques(uniques);
+    }
+
+    /** Like alt, but never absorbs alternatives into Σ*. Absorption is justified by
+     *  language inclusion, not by an equation, so it would lose the capture state
+     *  of the absorbed alternatives. */
+    static RegExp altExact(RegExp ...exprs) {
+        return fromUniques(uniques(exprs));
+    }
+
+    private static Set<RegExp> uniques(RegExp[] exprs) {
+        return Arrays.stream(exprs).filter(r -> !r.isVoid())
+                .flatMap(AlternationRE::flatten)
+                .collect(Collectors.toSet());
+    }
+
+    private static RegExp fromUniques(Set<RegExp> uniques) {
+        return switch (uniques.size()) {
             case 0 -> VoidRE.create();
-            case 1 -> uniques_a[0];
+            case 1 -> uniques.iterator().next();
             default -> canonicalize(new AlternationRE(uniques.toArray(RegExps)));
         };
     }
+
     /** A canonical RE for r? (Unix regex notation) */
     public static RegExp optional(RegExp r) {
         return alt(r, string(""));
@@ -77,6 +123,14 @@ public class AlternationRE extends RegExp {
         }
     }
 
+    /** The top-level summands of r: its alternatives if it is a sum, none if it is
+     *  void, and otherwise r itself. These are the positions of a matcher state. */
+    static RegExp[] summands(RegExp r) {
+        if (r instanceof AlternationRE a) return a.exprs;
+        if (r.isVoid()) return RegExps;
+        return new RegExp[]{r};
+    }
+
     @Override
     public void appendString(StringBuilder sb, int precedence) {
         if (precedence > 1) sb.append("(");
@@ -84,7 +138,6 @@ public class AlternationRE extends RegExp {
         for (RegExp r : exprs) {
             if (!first) sb.append('|');
             first = false;
-            assert !r.isVoid();
             r.appendString(sb, 1);
         }
         if (precedence > 1) sb.append(")");

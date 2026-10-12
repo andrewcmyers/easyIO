@@ -1,7 +1,5 @@
 package easyIO.regexp;
 
-import static easyIO.StdIO.println;
-
 /**
  * A string of characters, possibly empty
  */
@@ -14,6 +12,7 @@ public class StringRE extends RegExp {
     }
 
     public static RegExp string(String s) {
+        if (s.isEmpty()) return empty;
         return canonicalize(new StringRE(s));
     }
 
@@ -27,7 +26,10 @@ public class StringRE extends RegExp {
 
     @Override
     public RegExp derivative(int codepoint) {
-        if (chars.isEmpty() || chars.charAt(0) != codepoint) return VoidRE.create();
+        // Avoid caching derivatives that are void.
+        if (chars.isEmpty() || chars.codePointAt(0) != codepoint) {
+            return VoidRE.create();
+        }
         return super.derivative(codepoint);
     }
 
@@ -37,8 +39,8 @@ public class StringRE extends RegExp {
         // Dx y = 0  (y ≠ x)
         // so Dx xa = a
         //    Dx ya = 0
-        if (!chars.isEmpty() && chars.charAt(0) == codepoint) {
-            return string(chars.substring(1));
+        if (!chars.isEmpty() && chars.codePointAt(0) == codepoint) {
+            return string(chars.substring(Character.charCount(codepoint)));
         }
         return VoidRE.create();
     }
@@ -63,7 +65,7 @@ public class StringRE extends RegExp {
     }
 
     public static String quote(String s) {
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         s.codePoints().forEach((int i) -> {
             switch (i) {
                 case '*':
@@ -73,37 +75,27 @@ public class StringRE extends RegExp {
                 case '\\':
                 case '[':
                 case ']':
+                case '{':
+                case '}':
+                case '.':
                     b.append("\\");
                     b.append((char) i);
                     break;
                 default:
-                    b.appendCodePoint(i);
+                    appendEscaped(b, i);
             }
         });
         return b.toString();
     }
 
-    public class StringMatch implements Match {
-        StringBuilder builder = new StringBuilder();
-        Match parent;
-
-        StringMatch(Match parent) {
-            this.parent = parent;
-        }
-
-        @Override
-        public boolean success() {
-            return true;
-        }
-
-        @Override
-        public Match accept(int codepoint) {
-            builder.appendCodePoint(codepoint);
-            if (nullable()) {
-                return parent;
-            } else {
-                return this;
-            }
+    /** Append a character, written as an escape sequence if it is a newline,
+     *  carriage return, or tab. */
+    static void appendEscaped(StringBuilder b, int c) {
+        switch (c) {
+            case '\n' -> b.append("\\n");
+            case '\r' -> b.append("\\r");
+            case '\t' -> b.append("\\t");
+            default -> b.appendCodePoint(c);
         }
     }
 }

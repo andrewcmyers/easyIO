@@ -7,3 +7,4 @@ bin
 .*.sw?
 .idea/*
 *.iml
+!gradle/wrapper/gradle-wrapper.jar

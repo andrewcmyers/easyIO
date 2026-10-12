@@ -1,9 +1,16 @@
 package easyIO;
 
+import easyIO.regexp.Match;
+import easyIO.regexp.Matcher;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** A {@code BacktrackScanner} extended with convenience methods for
  * parsing common things like integers and identifiers.
@@ -315,4 +322,114 @@ public class Scanner extends BacktrackScanner {
 		}
 	}
 
+	/** The maximum number of patterns whose matchers are cached. */
+	static final int PATTERN_CACHE_SIZE = 100;
+
+	/** Matchers for the patterns most recently passed to next(String) and
+	 *  hasNext(String), so that a pattern used repeatedly is parsed only once. The
+	 *  least recently used pattern is evicted when the cache is full, so programs
+	 *  that construct many distinct patterns do not accumulate matchers. */
+	private static final Map<String, Matcher> patterns = Collections.synchronizedMap(
+			new LinkedHashMap<>(16, 0.75f, true) { // access order, for LRU eviction
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<String, Matcher> eldest) {
+					return size() > PATTERN_CACHE_SIZE;
+				}
+			});
+
+	/** The matcher for a pattern, parsed once and cached.
+	 *  @throws IllegalArgumentException if the pattern is not a valid regular expression. */
+	private static Matcher matcher(String pattern) {
+		return patterns.computeIfAbsent(pattern, Matcher::new); // atomic: the map is synchronized
+	}
+
+	/** The number of patterns currently cached. For testing. */
+	static int cachedPatterns() {
+		return patterns.size();
+	}
+
+	/**
+	 * Scan past the longest prefix of the input, starting at the current
+	 * position, that matches the regular expression of {@code m}, and return
+	 * all the ways it matches, with their captures. Capture positions are
+	 * relative to the start of the matched text, which is {@code group(0)} of
+	 * each match. The prefix may be empty if the regular expression matches the
+	 * empty string; then the input position does not change, so a loop that
+	 * calls this method until it fails will not terminate. Whitespace is not
+	 * skipped. Finding the longest prefix may require reading ahead past it.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 */
+	public List<Match> nextMatches(Matcher m) throws UnexpectedInput {
+		try {
+			return m.matchPrefix(this, true);
+		} catch (Matcher.FailedMatch e) {
+			throw uinp;
+		}
+	}
+
+	/**
+	 * Scan past and return the longest prefix of the input, starting at the
+	 * current position, that matches the regular expression of {@code m}. Like
+	 * {@code nextMatches(m)}, but faster because captures are not computed.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 */
+	public String next(Matcher m) throws UnexpectedInput {
+		mark();
+		try {
+			m.matchPrefix(this, false);
+			String r = getToken();
+			accept();
+			return r;
+		} catch (Matcher.FailedMatch e) {
+			abort();
+			throw uinp;
+		}
+	}
+
+	/**
+	 * Scan past and return the longest prefix of the input, starting at the
+	 * current position, that matches the regular expression {@code pattern},
+	 * written in the syntax of {@code easyIO.regexp.Parser}. The pattern is
+	 * parsed once and cached.
+	 *
+	 * @throws UnexpectedInput if no prefix matches. The input position is then
+	 *             left unchanged.
+	 * @throws IllegalArgumentException if the pattern is not a valid regular
+	 *             expression.
+	 */
+	public String next(String pattern) throws UnexpectedInput {
+		return next(matcher(pattern));
+	}
+
+	/**
+	 * Whether {@code next(m)} would succeed: that is, whether some prefix of the
+	 * input, possibly empty, matches the regular expression of {@code m}. The
+	 * input position is not changed.
+	 */
+	public boolean hasNext(Matcher m) {
+		mark();
+		try {
+			m.matchPrefix(this, false);
+			return true;
+		} catch (Matcher.FailedMatch e) {
+			return false;
+		} finally {
+			abort();
+		}
+	}
+
+	/**
+	 * Whether {@code next(pattern)} would succeed. The input position is not
+	 * changed.
+	 *
+	 * @throws IllegalArgumentException if the pattern is not a valid regular
+	 *             expression.
+	 */
+	public boolean hasNext(String pattern) {
+		return hasNext(matcher(pattern));
+	}
 }

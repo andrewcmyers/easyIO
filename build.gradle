@@ -8,10 +8,16 @@ repositories {
 group = 'easyIO'
 version = '1.0'
 
-sourceCompatibility = '1.21'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
@@ -29,4 +35,19 @@ sourceSets {
             srcDirs = ['test']
         }
     }
+    bench {
+        java {
+            srcDirs = ['bench']
+        }
+        compileClasspath += main.output
+        runtimeClasspath += main.output
+    }
+}
+
+tasks.register('bench', JavaExec) {
+    group = 'verification'
+    description = 'Runs the benchmark comparing easyIO.Scanner with java.util.Scanner.'
+    classpath = sourceSets.bench.runtimeClasspath
+    mainClass = 'easyIO.bench.ScannerBench'
+    maxHeapSize = '2g'
 }

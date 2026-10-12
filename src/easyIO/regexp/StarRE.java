@@ -12,10 +12,10 @@ public class StarRE extends RegExp {
     /** A canonical regular expression equivalent to r* */
     public static RegExp star(RegExp r) {
         // Kleene star is simplified using these rewrites:
-        //   0* = 0
+        //   0* = 1
         //   1* = 1
         //   r** = r*
-        if (r.isVoid()) return VoidRE.create();
+        if (r.isVoid()) return StringRE.empty();
         if (r instanceof StringRE s && s.nullable()) return s;
         if (r instanceof StarRE s) {
             return s;
@@ -31,8 +31,21 @@ public class StarRE extends RegExp {
 
     @Override
     protected RegExp computeDerivative(int codepoint) {
-        // Dx a* = (Dx a) a
+        // Dx a* = (Dx a) a*
         return concat(expr.derivative(codepoint), this);
+    }
+
+    @Override
+    public boolean hasCaptures() {
+        // Always false in a valid RE; reported so that numberCaptures can reject it.
+        return expr.hasCaptures();
+    }
+
+    @Override
+    protected RegExp numberCaptures(int[] next) {
+        if (expr.hasCaptures())
+            throw new IllegalArgumentException("a capture cannot occur inside a Kleene star: " + this);
+        return this;
     }
 
     @Override

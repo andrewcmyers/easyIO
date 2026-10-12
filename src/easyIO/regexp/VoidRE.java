@@ -1,7 +1,7 @@
 package easyIO.regexp;
 
 public class VoidRE extends RegExp {
-    static private final RegExp theRE = new VoidRE();
+    static private final RegExp instance = new VoidRE();
     @Override public boolean isVoid() {
         return true;
     }
@@ -10,7 +10,7 @@ public class VoidRE extends RegExp {
     }
 
     public static RegExp create() {
-        return theRE;
+        return instance;
     }
 
     @Override
@@ -21,7 +21,7 @@ public class VoidRE extends RegExp {
     @Override
     protected RegExp computeDerivative(int codepoint) {
         // Dx 0 = 0
-        return this;
+        return instance;
     }
 
     @Override

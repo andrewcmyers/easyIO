@@ -267,10 +267,24 @@ public class BacktrackScanner extends java.io.Reader {
         }
     }
 
+    /** A counter that changes whenever input is included or appended, which can
+     *  change the characters at positions after the current one. */
+    private int inputVersion = 0;
+
+    /** A value that changes whenever the input stream is changed by including or
+     *  appending a source. Clients that remember facts about the input at given
+     *  positions, such as which positions cannot start a match, can use it to tell
+     *  when those facts may no longer hold.
+     */
+    public int inputVersion() {
+        return inputVersion;
+    }
+
     /** Include a new input source to the input stream starting at the current position and
      * ahead of any existing inputs.
      */
     public void includeSource(Source s) {
+        inputVersion++;
         inputs.addFirst(s);
         Location[] suspended = new Location[end-pos];
         System.arraycopy(buffer, pos, suspended, 0, end-pos);
@@ -286,6 +300,7 @@ public class BacktrackScanner extends java.io.Reader {
 
     /** Add r to the input stream after existing inputs. */
     public void appendSource(Reader r, String name) {
+        inputVersion++;
         Source i = new ReaderSource(r, name);
         inputs.addLast(i);
         suspendedInput.addLast(new Location[0]);
