@@ -25,6 +25,10 @@ public class StringRE extends RegExp {
     }
 
     static class Unchanged extends DerivativeResult {
+        Unchanged(RegExp derivative) {
+            super(derivative);
+        }
+
         @Override
         public Match transform(Match input, int codepoint) {
             return input;

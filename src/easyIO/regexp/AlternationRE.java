@@ -40,12 +40,12 @@ public class AlternationRE extends RegExp {
                 .map(r -> r.derivative(codepoint)).toList().toArray(DerivativeResults);
         RegExp[] regexps = Arrays.stream(derivatives)
                 .map(DerivativeResult::derivative).toList().toArray(RegExps);
-        MatchTransformer[] transformers = Arrays.stream(derivatives)
-                .map((DerivativeResult d) -> d::transform).toArray(Transformers);
         return new DerivativeResult(alt(regexps)) {
             @Override
-            public Match transform(Match input) {
-                
+            public Match transform(Match input, int codepoint) {
+                Match[] transformers = Arrays.stream(derivatives)
+                        .map((DerivativeResult d) -> d.transform(input, codepoint)).toArray();
+                return input; // TODO ; this is all wrong
             }
         };
     }

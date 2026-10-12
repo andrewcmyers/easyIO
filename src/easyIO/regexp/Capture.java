@@ -1,5 +1,6 @@
 package easyIO.regexp;
 
+/// An unstarted capture pattern ⟦R⟧k
 public class Capture extends RegExp {
     final RegExp pattern;
     int captureIndex; // -1 or the index of this capture inside its RE
@@ -30,10 +31,13 @@ public class Capture extends RegExp {
         var nextExpr = pattern.derivative(codepoint);
         // discarding nextExpr.transformer here...
         var nextRE = new Capture(nextExpr.derivative(), captureIndex);
-        MatchTransformer transformer = (Match match) -> {
-            return new CaptureMatch(captureIndex);
+        return new DerivativeResult(new ActiveCapture(nextRE, captureIndex))
+        {
+            @Override
+            public Match transform(Match input, int codepoint) {
+                return null; // TODO
+            }
         };
-        return new DerivativeResult(nextRE, transformer);
     }
 
     @Override

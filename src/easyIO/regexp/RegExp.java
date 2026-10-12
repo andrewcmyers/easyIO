@@ -1,7 +1,6 @@
 package easyIO.regexp;
 
 import easyIO.regexp.Matcher.FailedMatch;
-import easyIO.regexp.Matcher.State;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,9 +42,8 @@ public abstract class RegExp {
         return result;
     }
 
-    public interface MatchTransformer {
-        Match transform(Match input);
-    }
+    // a derivative result that doesn't change the
+    // current match
     public static abstract class DerivativeResult {
         RegExp derivative;
 
@@ -53,14 +51,6 @@ public abstract class RegExp {
             this.derivative = derivative;
         }
         public RegExp derivative() { return derivative; }
-        public abstract Match transform(Match input, int codepoint);
-    }
-
-    public static class UnchangedMatch extends DerivativeResult {
-        UnchangedMatch(RegExp derivative) {
-            super(derivative);
-        }
-
         public Match transform(Match input, int codepoint) {
             return input;
         }
@@ -124,7 +114,7 @@ public abstract class RegExp {
     }
     public static final RegExp[] RegExps = {};
     public static final DerivativeResult[] DerivativeResults = {};
-    public static final MatchTransformer[] Transformers = {};
+    public static final Match[] Transformers = {};
 
     public Match finish(Match match) throws FailedMatch {
         if (!this.nullable()) throw FailedMatch.exception;
