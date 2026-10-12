@@ -10,7 +10,7 @@ clean:
 	-rm $(TARGETS)
 
 classfiles:
-	javac -d bin -sourcepath src src/easyIO/{Scanner,Regex,StdIO}.java
+	javac -d bin -sourcepath src `find src/easyIO -name '*.java'`
 
 easyIO.jar: classfiles
 	jar -cf easyIO.jar -C bin easyIO

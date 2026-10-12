@@ -688,4 +688,15 @@ public class SimpleTests {
         assertTrue(matchesAll("{|a}", ""));
         assertTrue(matchesAll("\\|", "|"));
     }
+
+    // Captures built with the API are numbered like parsed ones: an enclosing
+    // capture before the captures inside it
+    @Test void nestedCaptureNumbering() throws Parser.SyntaxError, Matcher.FailedMatch {
+        RegExp built = capture(concat(capture(string("a")), string("b")));
+        assertEquals(Set.of("⟨ab⟩1 ⟨a⟩2"), matches(new Matcher(built), "ab"));
+        assertEquals(Set.of("⟨ab⟩1 ⟨a⟩2"), matches(new Matcher(parse("{{a}b}")), "ab"));
+        RegExp deeper = concat(capture(concat(capture(string("x")), capture(string("y")))), capture(string("z")));
+        assertEquals(Set.of("⟨xy⟩1 ⟨x⟩2 ⟨y⟩3 ⟨z⟩4"), matches(new Matcher(deeper), "xyz"));
+        assertEquals(Set.of("⟨xy⟩1 ⟨x⟩2 ⟨y⟩3 ⟨z⟩4"), matches(new Matcher(parse("{{x}{y}}{z}")), "xyz"));
+    }
 }

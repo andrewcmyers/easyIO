@@ -65,9 +65,11 @@ public class Capture extends RegExp {
 
     @Override
     protected RegExp numberCaptures(int[] next) {
+        // Number this capture before the ones inside it, as the parser does by
+        // numbering captures in the order of their opening braces.
+        int k = captureIndex != -1 ? captureIndex : next[0]++;
         RegExp p = pattern.numberCaptures(next);
         if (captureIndex != -1 && p == pattern) return this;
-        int k = captureIndex != -1 ? captureIndex : next[0]++;
         return capture(p, k);
     }
 

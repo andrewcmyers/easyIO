@@ -52,7 +52,11 @@ public class Matcher {
     private record HopelessStates(int inputVersion, Set<IndexedState> states) {}
 
     /** Create a matcher for r. Captures in r that do not have an index are numbered
-     *  in tree order, after any captures that do.
+     *  after any captures that do, in tree order: an enclosing capture before the
+     *  captures inside it, and the parts of a concatenation from left to right. (The
+     *  order of the alternatives of an alternation is not specified, so to control
+     *  the numbering of captures in different alternatives, number them explicitly
+     *  with Capture.capture(e, k) or Parser.parse.)
      *  Throws IllegalArgumentException if a capture occurs inside a Kleene star, or
      *  if two captures have the same index (as happens when combining patterns that
      *  were parsed separately with their captures numbered from 1). */
