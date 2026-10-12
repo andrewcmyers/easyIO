@@ -137,17 +137,33 @@ public class Matcher {
 
         /** The matches if the input ends here, where s is the input consumed. */
         List<Match> results(String s) {
-            if (!state.nullable()) return List.of();
-            if (captures == null) return List.of(new Match(s, Env.empty(0)));
-            Ops[][] accept = acceptOps(state);
-            Set<Env> envs = new LinkedHashSet<>();
-            for (int i = 0; i < accept.length; i++) {
-                for (Ops ops : accept[i]) {
-                    for (Env env : captures[i]) envs.add(ops.apply(env, s.length()));
-                }
-            }
-            return envs.stream().map(env -> new Match(s, env)).toList();
+            return matchesAt(state, captures, s);
         }
+
+        /** The current state of this run, from which its matches can be computed
+         *  later. Cheap, because the capture arrays are never modified. */
+        Snapshot snapshot() {
+            return new Snapshot(state, captures);
+        }
+    }
+
+    /** The state of a run at some input position, saved so that the matches there
+     *  can be computed only if they turn out to be needed. */
+    private record Snapshot(RegExp state, Env[][] captures) {}
+
+    /** The matches when the input s has been consumed, ending in the given state
+     *  and capture state. */
+    private static List<Match> matchesAt(RegExp state, Env[][] captures, String s) {
+        if (!state.nullable()) return List.of();
+        if (captures == null) return List.of(new Match(s, Env.empty(0)));
+        Ops[][] accept = acceptOps(state);
+        Set<Env> envs = new LinkedHashSet<>();
+        for (int i = 0; i < accept.length; i++) {
+            for (Ops ops : accept[i]) {
+                for (Env env : captures[i]) envs.add(ops.apply(env, s.length()));
+            }
+        }
+        return envs.stream().map(env -> new Match(s, env)).toList();
     }
 
     private static final Env[] NO_ENVS = {};
@@ -283,7 +299,7 @@ public class Matcher {
      *  end of the prefix.
      */
     public List<Match> matchPrefix(BacktrackScanner s, boolean captures) throws FailedMatch {
-        List<Match> found = longestMatch(s, new Run(true, captures), hopelessFor(s), true);
+        List<Match> found = longestMatch(s, new Run(false, captures), hopelessFor(s), true);
         if (found == null) throw FailedMatch.exception;
         return found;
     }
@@ -301,7 +317,7 @@ public class Matcher {
         Set<IndexedState> hopeless = hopelessFor(s);
         while (true) {
             s.mark(); // start mark, left for the client if an occurrence is found here
-            List<Match> found = longestMatch(s, new Run(true), hopeless, false);
+            List<Match> found = longestMatch(s, new Run(false), hopeless, false);
             if (found != null) return found;
             s.abort(); // erase the start mark; the position is already back at the start
             if (!s.hasNext()) throw FailedMatch.exception;
@@ -330,13 +346,12 @@ public class Matcher {
     private List<Match> longestMatch(BacktrackScanner s, Run run, Set<IndexedState> hopeless,
                                      boolean allowEmpty) {
         s.mark(); // start mark
-        List<Match> found = null; // the matches of the longest match so far
-        if (allowEmpty) {
-            List<Match> empty = run.results();
-            if (!empty.isEmpty()) {
-                found = empty;
-                s.mark(); // end mark
-            }
+        // Where the longest match so far ends. Its matches are computed only at the
+        // end, since a longer match usually supersedes it.
+        Snapshot found = null;
+        if (allowEmpty && run.state.nullable()) {
+            found = run.snapshot();
+            s.mark(); // end mark
         }
         // The states seen since the end of the longest match so far (or since the start,
         // if there is none), all of which are hopeless if no longer match is found.
@@ -360,25 +375,30 @@ public class Matcher {
                 run.step(ch);
                 if (run.state.nullable()) {
                     if (found != null) s.accept(); // drop the previous end mark
-                    found = run.results();
+                    found = run.snapshot();
                     s.mark(); // end mark, so we can roll back to this position
                     seenStates.clear();
                     continue;
                 }
-                IndexedState here = new IndexedState(s.inputPosition(), run.state);
-                seenStates.add(here);
-                stuck = run.state.isVoid() || hopeless.contains(here);
-                if (DEBUG && !run.state.isVoid() && stuck) println("Abandoning early because state is hopeless");
+                if (run.state.isVoid()) {
+                    stuck = true; // void states need not be remembered as hopeless
+                } else {
+                    IndexedState here = new IndexedState(s.inputPosition(), run.state);
+                    seenStates.add(here);
+                    stuck = hopeless.contains(here);
+                    if (DEBUG && stuck) println("Abandoning early because state is hopeless");
+                }
             }
             if (!stuck) continue;
             hopeless.addAll(seenStates);
-            if (found != null) {
-                s.abort();  // roll back to the end mark
-                s.accept(); // erase the start mark
-            } else {
-                s.abort();  // roll back to the start mark
+            if (found == null) {
+                s.abort(); // roll back to the start mark
+                return null;
             }
-            return found;
+            s.abort(); // roll back to the end mark
+            String text = s.getToken(); // the text from the start mark to here
+            s.accept(); // erase the start mark
+            return matchesAt(found.state(), found.captures(), text);
         }
     }
 }

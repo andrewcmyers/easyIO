@@ -35,4 +35,19 @@ sourceSets {
             srcDirs = ['test']
         }
     }
+    bench {
+        java {
+            srcDirs = ['bench']
+        }
+        compileClasspath += main.output
+        runtimeClasspath += main.output
+    }
+}
+
+tasks.register('bench', JavaExec) {
+    group = 'verification'
+    description = 'Runs the benchmark comparing easyIO.Scanner with java.util.Scanner.'
+    classpath = sourceSets.bench.runtimeClasspath
+    mainClass = 'easyIO.bench.ScannerBench'
+    maxHeapSize = '2g'
 }
