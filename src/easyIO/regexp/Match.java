@@ -14,27 +14,34 @@ public final class Match {
         this.env = env;
     }
 
-    /** The number of capture groups (not counting group 0). */
+    /** The number of capture groups (not counting group 0): the largest capture
+     *  index in the regular expression. It is 0 if the regular expression has no
+     *  captures, or if this match was made without tracking captures (as by
+     *  Matcher.matchPrefix(s, false)), in which case only group 0 is available. */
     public int groupCount() {
         return env.size() - 1;
     }
 
-    /** Whether capture k matched something (possibly empty) in this match. */
+    /** Whether capture k matched something (possibly empty) in this match.
+     *  Requires: 0 ≤ k ≤ groupCount(). */
     public boolean isSet(int k) {
         return k == 0 || env.start(k) != -1;
     }
 
-    /** The start of capture k, or -1 if it did not participate in this match. */
+    /** The start of capture k, or -1 if it did not participate in this match.
+     *  Requires: 0 ≤ k ≤ groupCount(). */
     public int start(int k) {
         return k == 0 ? 0 : env.start(k);
     }
 
-    /** The end of capture k, or -1 if it did not participate in this match. */
+    /** The end of capture k, or -1 if it did not participate in this match.
+     *  Requires: 0 ≤ k ≤ groupCount(). */
     public int end(int k) {
         return k == 0 ? text.length() : env.end(k);
     }
 
-    /** The text captured by capture k, or null if it did not participate in this match. */
+    /** The text captured by capture k, or null if it did not participate in this match.
+     *  Requires: 0 ≤ k ≤ groupCount(). */
     public String group(int k) {
         if (!isSet(k)) return null;
         return text.substring(start(k), end(k));
