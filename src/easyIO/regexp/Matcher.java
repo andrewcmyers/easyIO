@@ -155,6 +155,15 @@ public class Matcher {
 
     /** The (cached) transition of matcher state `state` on `codepoint`. */
     static Transition transition(RegExp state, int codepoint) {
+        if (codepoint < RegExp.ASCII) {
+            if (state.asciiTransitions == null) state.asciiTransitions = new Transition[RegExp.ASCII];
+            Transition t = state.asciiTransitions[codepoint];
+            if (t == null) {
+                t = computeTransition(state, codepoint);
+                state.asciiTransitions[codepoint] = t;
+            }
+            return t;
+        }
         if (state.transitions == null) state.transitions = new HashMap<>();
         Transition t = state.transitions.get(codepoint);
         if (t == null) {

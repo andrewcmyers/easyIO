@@ -19,12 +19,19 @@ public abstract class RegExp {
     /** A memoization map from next characters (Unicode codepoints)
      * to Brzozowski derivatives: regular expressions recognizing
      * the suffix of the expression. */
-    private final Map<Integer, RegExp> derivatives = new HashMap<>();
+    private Map<Integer, RegExp> derivatives = null;
+    /** Memoized derivatives for ASCII codepoints, which avoid boxing and hashing.
+     *  Allocated on first use. */
+    private RegExp[] asciiDerivatives = null;
+    /** The number of ASCII codepoints, which are cached in arrays rather than maps. */
+    static final int ASCII = 128;
     /** Memoized derivatives as lists of (term, ops) pairs. Only used for REs with captures. */
     private Map<Integer, List<DerivTerm>> termDerivatives = null;
     /** Memoized accepting ops. */
     private List<Ops> nullOps = null;
-    /** Memoized transitions when this RE is used as a matcher state. */
+    /** Memoized transitions when this RE is used as a matcher state, for ASCII
+     *  codepoints and for all others. Allocated on first use. */
+    Matcher.Transition[] asciiTransitions = null;
     Map<Integer, Matcher.Transition> transitions = null;
     /** Memoized accepting ops for each position when this RE is used as a matcher state. */
     Ops[][] acceptOps = null;
@@ -66,6 +73,16 @@ public abstract class RegExp {
 
     /** The (canonical) Brzozowski derivative of this regular expression. */
     public RegExp derivative(int codepoint) {
+        if (codepoint < ASCII) {
+            if (asciiDerivatives == null) asciiDerivatives = new RegExp[ASCII];
+            RegExp result = asciiDerivatives[codepoint];
+            if (result == null) {
+                result = computeDerivative(codepoint);
+                asciiDerivatives[codepoint] = result;
+            }
+            return result;
+        }
+        if (derivatives == null) derivatives = new HashMap<>();
         var result = derivatives.get(codepoint);
         if (result == null) {
             if (DEBUG) {
