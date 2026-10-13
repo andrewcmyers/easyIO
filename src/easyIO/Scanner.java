@@ -234,9 +234,9 @@ public class Scanner extends BacktrackScanner {
 	}
 
 	/**
-	 * Scan past and return all text from the current position to the next
-	 * newline character.
-	 * 
+	 * Scan past and return all text from the current position through the next
+	 * line terminator (see {@link #lineTerminators()}), including the terminator.
+	 *
 	 * @throws UnexpectedInput
 	 *             if there is no terminated line after the current position.
 	 */
@@ -244,8 +244,7 @@ public class Scanner extends BacktrackScanner {
 		mark();
 		while (hasNext()) {
 			try {
-				int c = nextCodePoint();
-				if (c == '\n') break;
+				if (endOfLine()) break;
 			} catch (EOF e) {
 				assert false;
 				break;
@@ -272,36 +271,55 @@ public class Scanner extends BacktrackScanner {
 			throw e;
 		}
 	}
-	/** Scan past a optional carriage return character and a newline character.
-	 * 
-	 * @throws UnexpectedInput if the next characters are neither "\r\n" nor "\n".
+	/** Scan past a line terminator (see {@link #lineTerminators()}).
+	 *
+	 * @throws UnexpectedInput if the next characters are not a line terminator.
 	 */
 	public void newline() throws UnexpectedInput {
-		mark();
-		if (peek() == '\r') advance();
 		if (peek() == '\n') {
 			advance();
-			accept();
 			return;
-		} else {
-			abort();
-			throw uinp;
 		}
+		if (peek() == '\r' && lineTerminators() != LineTerminators.LF) {
+			mark();
+			advance();
+			if (peek() == '\n' || lineTerminators() == LineTerminators.LF_CRLF_CR) {
+				if (peek() == '\n') advance();
+				accept();
+				return;
+			}
+			abort();
+		}
+		throw uinp;
 	}
 
 	/**
-	 * Scan to the end of the current line or to the end of the input, whichever
-	 * is first.
+	 * Scan past the end of the current line, including its line terminator (see
+	 * {@link #lineTerminators()}), or to the end of the input, whichever is first.
 	 */
 	public void eol() {
 		while (true) {
 			try {
-				int c = nextCodePoint();
-				if (c == '\n') return;
+				if (endOfLine()) return;
 			} catch (EOF e) {
 				return;
 			}
 		}
+	}
+
+	/** Scan past the next character. If it begins a line terminator, also scan
+	 *  past the rest of the terminator and return true; otherwise, return false.
+	 *  @throws EOF if there is no next character.
+	 */
+	private boolean endOfLine() throws EOF {
+		int c = nextCodePoint();
+		if (c == '\n') return true;
+		if (c == '\r' && lineTerminators() != LineTerminators.LF
+				&& (peek() == '\n' || lineTerminators() == LineTerminators.LF_CRLF_CR)) {
+			if (peek() == '\n') advance();
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -316,6 +334,8 @@ public class Scanner extends BacktrackScanner {
 			 case '\n':
 			 case '\f': // treat form feed like newline
 				return;
+			 case '\r':
+				if (lineTerminators() == LineTerminators.LF_CRLF_CR) return;
 			}
 			if (!Character.isWhitespace(c)) return;
 			advance();

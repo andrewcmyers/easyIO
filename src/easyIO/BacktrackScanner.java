@@ -41,6 +41,10 @@ public class BacktrackScanner extends java.io.Reader {
          /** Return the next character location or null if eof is reached. */
          Location read() throws IOException;
          void close() throws IOException;
+         /** Use t to determine where lines end in the line numbers and columns
+          *  of characters read after this call. The default implementation
+          *  ignores t. */
+         default void setLineTerminators(LineTerminators t) {}
      }
 
     /** A source of input for the scanner in which the input comes from a Reader. */
@@ -51,6 +55,9 @@ public class BacktrackScanner extends java.io.Reader {
         private int charpos = 0;
         /** A pending character to be delivered on next read(), if non-null. (Used for low surrogates) */
         private Location pending = null;
+        private LineTerminators terminators = LineTerminators.LF_CRLF;
+        /** Whether the last character read was a "\r" that terminated a line. */
+        private boolean afterCR = false;
 
         /** Create a source named n whose input comes from r */
         public ReaderSource(Reader r, String n) {
@@ -71,6 +78,10 @@ public class BacktrackScanner extends java.io.Reader {
         public int column() {
             return charpos;
         }
+        @Override
+        public void setLineTerminators(LineTerminators t) {
+            terminators = t;
+        }
 
         /** Return the next character location or null if eof is reached. */
         public Location read() throws IOException {
@@ -81,7 +92,11 @@ public class BacktrackScanner extends java.io.Reader {
             }
             int c = reader.read();
             if (c == -1) return null;
-            if (c == '\n') {
+            boolean crlf = afterCR && c == '\n';
+            afterCR = c == '\r' && terminators == LineTerminators.LF_CRLF_CR;
+            if (crlf) {
+                // the "\r" already ended the line
+            } else if (c == '\n' || afterCR) {
                 lineno++;
                 charpos = 0;
             } else {
@@ -233,6 +248,22 @@ public class BacktrackScanner extends java.io.Reader {
         }
     }
 
+    private LineTerminators lineTerminators = LineTerminators.LF_CRLF;
+
+    /** The line terminators this scanner accepts. Initially LF_CRLF. */
+    public LineTerminators lineTerminators() {
+        return lineTerminators;
+    }
+
+    /** Accept the line terminators t, both in line numbers and columns
+     *  and in the methods that recognize the ends of lines.
+     *  Requires: no input has been read yet.
+     */
+    public void setLineTerminators(LineTerminators t) {
+        lineTerminators = t;
+        for (Source s : inputs) s.setLineTerminators(t);
+    }
+
     /** Name of the current input source. */
     public String source() {
         return inputs.getFirst().name();
@@ -289,6 +320,7 @@ public class BacktrackScanner extends java.io.Reader {
      */
     public void includeSource(Source s) {
         inputVersion++;
+        s.setLineTerminators(lineTerminators);
         inputs.addFirst(s);
         Location[] suspended = new Location[end-pos];
         System.arraycopy(buffer, pos, suspended, 0, end-pos);
@@ -306,6 +338,7 @@ public class BacktrackScanner extends java.io.Reader {
     public void appendSource(Reader r, String name) {
         inputVersion++;
         Source i = new ReaderSource(r, name);
+        i.setLineTerminators(lineTerminators);
         inputs.addLast(i);
         suspendedInput.addLast(new Location[0]);
     }
