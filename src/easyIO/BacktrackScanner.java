@@ -2,6 +2,7 @@ package easyIO;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
@@ -153,7 +154,8 @@ public class BacktrackScanner extends java.io.Reader {
     private int bufferOffset; // offset in characters from the input start to the beginning of the buffer
 
     /** if non-zero, pendingChar is the low surrogate for a character whose
-     *  high surrogate has already been returned by read()
+     *  high surrogate has already been returned by next(). The input position
+     *  is then after the whole character, and pendingChar is the next char.
      */
     private char pendingChar = 0;
 
@@ -165,6 +167,7 @@ public class BacktrackScanner extends java.io.Reader {
      *  marks
      */
     private int[] marks;
+    private char[] markPendingChars; // pendingChar at each mark
     int nmarks;
     private static final int INITIAL_SIZE = 1;
 
@@ -215,6 +218,7 @@ public class BacktrackScanner extends java.io.Reader {
         end = 0;
         bufferOffset = 0;
         marks = new int[INITIAL_SIZE];
+        markPendingChars = new char[INITIAL_SIZE];
         nmarks = 0;
     }
     /** Create a scanner that immediately starts reading from this Reader. */
@@ -336,6 +340,7 @@ public class BacktrackScanner extends java.io.Reader {
     /** The next character ahead in the input. Equivalent to {@code begin(); c = nextCodePoint(); abort(); return c;}
      *  except that it returns -1 if the end of input has been reached. */
     public int peek() {
+        if (pendingChar != 0) return pendingChar;
         if (charsAhead())
             return buffer[pos].character;
         Location c;
@@ -424,7 +429,9 @@ public class BacktrackScanner extends java.io.Reader {
             int[] rs2 = new int[nmarks*2];
             System.arraycopy(marks,  0,  rs2,  0,  nmarks);
             marks = rs2;
+            markPendingChars = Arrays.copyOf(markPendingChars, nmarks*2);
         }
+        markPendingChars[nmarks] = pendingChar;
         marks[nmarks++] = pos;
     }
 
@@ -479,13 +486,14 @@ public class BacktrackScanner extends java.io.Reader {
         if (nmarks == 0) throw new UnsupportedOperationException();
         assert nmarks > 0;
         pos = marks[nmarks-1];
+        pendingChar = markPendingChars[nmarks-1];
         nmarks--;
     }
 
     /** Advance past the next character, if any. Do nothing if at end of input. */
     public void advance() {
         try {
-            next();
+            nextCodePoint();
         } catch (EOF e) {
             // do nothing
         }
@@ -501,6 +509,11 @@ public class BacktrackScanner extends java.io.Reader {
      *  method as two chars in sequence, representing a surrogate pair.
      */
     public char next() throws EOF {
+        if (pendingChar != 0) {
+            char c = pendingChar;
+            pendingChar = 0;
+            return c;
+        }
         int ch = nextCodePoint();
         if (Character.charCount(ch) == 1)
             return (char) ch;
@@ -509,12 +522,17 @@ public class BacktrackScanner extends java.io.Reader {
         return chs[0];
     }
 
-    /** Read the next character from the stream. Throw EOF
-     *  if there is no next character. If the next character is
-     *  a Unicode supplementary character, it is reported by this
-     *  method as two chars in sequence, representing a surrogate pair.
+    /** Read the next code point from the stream. Throw EOF
+     *  if there is no next character. If next() has just returned the
+     *  high surrogate of a supplementary character, the result is its
+     *  low surrogate.
      */
     public int nextCodePoint() throws EOF {
+        if (pendingChar != 0) {
+            int c = pendingChar;
+            pendingChar = 0;
+            return c;
+        }
         if (charsAhead()) {
             return buffer[pos++].character;
         }
@@ -540,8 +558,8 @@ public class BacktrackScanner extends java.io.Reader {
      */
     public void string(String s) throws UnexpectedInput {
         mark();
-        for (int i = 0; i < s.length(); i++) {
-            if (peek() == s.charAt(i)) {
+        for (int i = 0; i < s.length(); i += Character.charCount(s.codePointAt(i))) {
+            if (peek() == s.codePointAt(i)) {
                 advance();
             } else {
                 abort();
