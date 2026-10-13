@@ -9,3 +9,7 @@ regular expression support does. It also supports capture expressions.
 
 Its behavior is a little different and more explicit than Java's, because it's intended for real parsing tasks.
 In particular, It doesn't automatically skip over whitespace, and nextLine() returns the whole line including terminators.
+
+## Documentation
+
+https://andrewcmyers.github.io/easyIO/
